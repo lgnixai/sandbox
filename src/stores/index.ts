@@ -4,7 +4,7 @@ import { enableMapSet } from 'immer';
 import { type UIState, type UIActions } from './uiStore';
 import { type NotesState, type NotesActions } from './notesStore';
 import { type EditorState, type EditorActions, type EditorFile } from './editorStore';
-import { type FileTreeState, type FileTreeActions, type TreeNode, type FileNode, type FolderNode } from './fileTreeStore';
+import { type FileTreeState, type FileTreeActions, type FileNode, type FolderNode } from './fileTreeStore';
 import { storage } from '@/lib/storage';
 import { UnlinkedMentionsCalculator } from '@/lib/unlinkedMentions';
 
@@ -152,7 +152,6 @@ console.log('Hello, ReNote!');
         folder: '/workspace/笔记'
       }
     },
-    expandedFolders: new Set(['/workspace', '/workspace/笔记']),
     selectedFileId: null,
 
     // Editor 状态
@@ -252,21 +251,8 @@ console.log('Hello, ReNote!');
         state.notes[noteId].updatedAt = new Date();
       }
     }),
-    createFolder: (_path, _name) => set((_state) => {
-      // 文件夹创建逻辑
-    }),
     renameFolder: (_oldPath, _newName) => set((_state) => {
       // 文件夹重命名逻辑
-    }),
-    deleteFolder: (_path) => set((_state) => {
-      // 文件夹删除逻辑
-    }),
-    toggleFolder: (path) => set((state) => {
-      if (state.expandedFolders.has(path)) {
-        state.expandedFolders.delete(path);
-      } else {
-        state.expandedFolders.add(path);
-      }
     }),
     setSelectedFile: (fileId) => set((state) => {
       state.selectedFileId = fileId;
@@ -797,24 +783,7 @@ console.log('Hello, ReNote!');
       
       // 检查所有祖先文件夹是否都展开
       return ancestors.every(ancestorPath => state.expandedFolders.has(ancestorPath));
-    }
-  }))
-);
-
-// 主题切换时更新 HTML class
-useAppStore.subscribe((state) => {
-  if (state.isDarkMode) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-  // 设置多主题 data 属性
-  document.documentElement.setAttribute('data-theme', state.theme || 'obsidian');
-  try {
-    localStorage.setItem('app-theme', state.theme || 'obsidian');
-    localStorage.setItem('app-dark', state.isDarkMode ? '1' : '0');
-  } catch {}
-});
+    },
 
     // 文件树与笔记同步方法
     syncFileTreeWithNotes: () => {
