@@ -109,13 +109,34 @@ export const useEditorStore = create<EditorState & EditorActions>()(
       const pane = state.panes.find(p => p.id === paneId);
       if (!pane) return;
 
+      // 如果只有一个标签页，创建一个新的"新标签页"而不是完全关闭
+      if (pane.tabs.length === 1) {
+        const newTabId = `new-tab-${Date.now()}`;
+        pane.tabs = [{
+          id: newTabId,
+          noteId: 'new-tab-page',
+          title: '新标签页',
+          isDirty: false
+        }];
+        pane.activeTabId = newTabId;
+        return;
+      }
+
       pane.tabs = pane.tabs.filter(tab => tab.id !== tabId);
       if (pane.activeTabId === tabId) {
         pane.activeTabId = pane.tabs[0]?.id || null;
       }
 
+      // 当面板中没有标签页时，创建一个新标签页
       if (pane.tabs.length === 0) {
-        state.panes = state.panes.filter(p => p.id !== paneId);
+        const newTabId = `new-tab-${Date.now()}`;
+        pane.tabs = [{
+          id: newTabId,
+          noteId: 'new-tab-page',
+          title: '新标签页',
+          isDirty: false
+        }];
+        pane.activeTabId = newTabId;
       }
     }),
 

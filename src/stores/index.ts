@@ -52,6 +52,17 @@ export const useAppStore = create<AppState & AppActions>()(
 
     // Notes 状态
     notes: {
+      'new-tab-page': {
+        id: 'new-tab-page',
+        title: '新标签页',
+        content: '', // 空内容，将使用 WelcomeScreen 组件渲染
+        links: [],
+        backlinks: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        fileType: 'welcome' as any, // 特殊类型，用于标识这是欢迎页面
+        folder: '/system'
+      },
       'welcome': {
         id: 'welcome',
         title: '欢迎',
@@ -160,13 +171,13 @@ console.log('Hello, ReNote!');
         id: 'main-pane',
         tabs: [
           {
-            id: 'welcome-tab',
-            noteId: 'welcome',
-            title: '欢迎',
+            id: 'new-tab-page',
+            noteId: 'new-tab-page',
+            title: '新标签页',
             isDirty: false
           }
         ],
-        activeTabId: 'welcome-tab'
+        activeTabId: 'new-tab-page'
       }
     ],
     activePaneId: 'main-pane',

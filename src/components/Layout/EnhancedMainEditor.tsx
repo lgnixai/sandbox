@@ -2,6 +2,7 @@ import React, { useCallback, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { TabBar } from '../Obeditor/Tab';
 import { EnhancedMarkdownEditor } from '../Editor/EnhancedMarkdownEditor';
+import { WelcomeScreen } from './WelcomeScreen';
 import { useAppStore } from '@/stores';
 import { cn } from '@/lib/utils';
 
@@ -103,79 +104,85 @@ export function EnhancedMainEditor() {
   const renderPane = (pane: typeof panes[0]) => {
     const activeTab = pane.tabs.find(tab => tab.id === pane.activeTabId);
     const activeNote = activeTab ? notes[activeTab.noteId] : null;
+    const hasActiveTabs = pane.tabs.length > 0;
 
     return (
       <div className="h-full flex flex-col bg-background">
-        <TabBar
-          tabs={pane.tabs.map(tab => ({
-            ...tab,
-            isActive: tab.id === pane.activeTabId
-          }))}
-          onCloseTab={handleCloseTab(pane.id)}
-          onActivateTab={handleActivateTab(pane.id)}
-          onAddTab={handleAddTab(pane.id)}
-          onCloseOthers={(tabId) => {
-            // 关闭其他标签
-            pane.tabs.forEach(tab => {
-              if (tab.id !== tabId) {
-                closeTab(tab.id, pane.id);
-              }
-            });
-          }}
+        {/* 只有当有标签页时才显示标签栏 */}
+        {hasActiveTabs && (
+          <TabBar
+            tabs={pane.tabs.map(tab => ({
+              ...tab,
+              isActive: tab.id === pane.activeTabId
+            }))}
+            onCloseTab={handleCloseTab(pane.id)}
+            onActivateTab={handleActivateTab(pane.id)}
+            onAddTab={handleAddTab(pane.id)}
+            onCloseOthers={(tabId) => {
+              // 关闭其他标签
+              pane.tabs.forEach(tab => {
+                if (tab.id !== tabId) {
+                  closeTab(tab.id, pane.id);
+                }
+              });
+            }}
           onCloseAll={() => {
-            // 关闭所有标签
+            // 关闭所有标签，但会自动创建新标签页
             pane.tabs.forEach(tab => {
               closeTab(tab.id, pane.id);
             });
           }}
-          onSplitHorizontal={handleSplitHorizontal(pane.id)}
-          onSplitVertical={handleSplitVertical(pane.id)}
-          onToggleLock={(tabId) => {
-            // TODO: 实现标签锁定功能
-            console.log('Toggle lock:', tabId);
-          }}
-          onDuplicate={(tabId) => {
-            // TODO: 实现标签复制功能
-            console.log('Duplicate tab:', tabId);
-          }}
-          onRename={(tabId, newTitle) => {
-            const tab = pane.tabs.find(t => t.id === tabId);
-            if (tab) {
-              updateNote(tab.noteId, { title: newTitle });
-            }
-          }}
-        />
-        
-        {activeNote && activeTab ? (
-          <div className="flex-1 overflow-hidden">
-            <EnhancedMarkdownEditor
-              noteId={activeTab.noteId}
-              content={activeNote.content}
-              onChange={(content) => handleNoteChange(activeTab.noteId, content)}
-              onSave={() => handleNoteSave(activeTab.noteId)}
-              isDirty={activeTab.isDirty}
-            />
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <p className="text-lg mb-2">没有打开的文件</p>
-              <p className="text-sm">从文件树中选择一个文件或创建新文件</p>
-            </div>
-          </div>
+            onSplitHorizontal={handleSplitHorizontal(pane.id)}
+            onSplitVertical={handleSplitVertical(pane.id)}
+            onToggleLock={(tabId) => {
+              // TODO: 实现标签锁定功能
+              console.log('Toggle lock:', tabId);
+            }}
+            onDuplicate={(tabId) => {
+              // TODO: 实现标签复制功能
+              console.log('Duplicate tab:', tabId);
+            }}
+            onRename={(tabId, newTitle) => {
+              const tab = pane.tabs.find(t => t.id === tabId);
+              if (tab) {
+                updateNote(tab.noteId, { title: newTitle });
+              }
+            }}
+          />
         )}
+        
+        {/* 内容区域 */}
+        <div className="flex-1 overflow-hidden">
+          {activeNote && activeTab ? (
+            // 检查是否是新标签页，如果是则显示欢迎界面
+            activeTab.noteId === 'new-tab-page' ? (
+              <WelcomeScreen 
+                onCreateNewFile={() => handleAddTab(pane.id)()}
+              />
+            ) : (
+              <EnhancedMarkdownEditor
+                noteId={activeTab.noteId}
+                content={activeNote.content}
+                onChange={(content) => handleNoteChange(activeTab.noteId, content)}
+                onSave={() => handleNoteSave(activeTab.noteId)}
+                isDirty={activeTab.isDirty}
+              />
+            )
+          ) : (
+            <WelcomeScreen 
+              onCreateNewFile={() => handleAddTab(pane.id)()}
+            />
+          )}
+        </div>
       </div>
     );
   };
 
-  // 如果没有面板，创建默认面板
+  // 如果没有面板，显示欢迎界面
   if (panes.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-muted-foreground">
-        <div className="text-center">
-          <p className="text-lg mb-2">没有打开的编辑器</p>
-          <p className="text-sm">从文件树中选择一个文件开始编辑</p>
-        </div>
+      <div className="h-full">
+        <WelcomeScreen />
       </div>
     );
   }

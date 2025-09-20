@@ -6,7 +6,7 @@ import { LeftSidebar } from './LeftSidebar';
 import { EnhancedMainEditor } from './EnhancedMainEditor';
 import { RightSidebar } from './RightSidebar';
 import { Resizable, ResizableHandle, ResizablePanel } from '../ui/resizable';
-import type { ImperativePanelHandle } from 'react-resizable-panels';
+// import type { ImperativePanelHandle } from 'react-resizable-panels'; // 暂时未使用
 
 export function TestLayout() {
   const {
