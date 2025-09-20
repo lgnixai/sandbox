@@ -6,6 +6,7 @@ import { LeftSidebar } from './LeftSidebar';
 import { EnhancedMainEditor } from './EnhancedMainEditor';
 import { RightSidebar } from './RightSidebar';
 import { Resizable, ResizableHandle, ResizablePanel } from '../ui/resizable';
+import type { ImperativePanelHandle } from 'react-resizable-panels';
 
 export function TestLayout() {
   const {
@@ -68,6 +69,9 @@ export function TestLayout() {
     setRightSidebarWidth(width);
   };
 
+  // 生成动态的 panel 布局 key，确保在侧边栏可见性改变时重新创建组件
+  const layoutKey = `${leftSidebarVisible ? 'L' : ''}${rightSidebarVisible ? 'R' : ''}`;
+
   const renderMainContent = () => {
     if (!leftSidebarVisible && !rightSidebarVisible) {
       return (
@@ -78,71 +82,57 @@ export function TestLayout() {
       );
     }
 
-    if (leftSidebarVisible && rightSidebarVisible) {
-      return (
-        <div className="flex flex-1">
-          <ActivityBar />
-          <div className="flex flex-1" ref={containerRef}>
-            <Resizable direction="horizontal" className="flex flex-1">
-              <ResizablePanel defaultSize={leftDefault} minSize={leftMin} maxSize={leftMax} onResize={onLeftResize}>
-                <LeftSidebar />
-              </ResizablePanel>
-              <ResizableHandle className="w-px bg-border" />
-              <ResizablePanel>
-                <EnhancedMainEditor />
-              </ResizablePanel>
-              <ResizableHandle className="w-px bg-border" />
-              <ResizablePanel defaultSize={rightDefault} minSize={rightMin} maxSize={rightMax} onResize={onRightResize}>
-                <RightSidebar />
-              </ResizablePanel>
-            </Resizable>
-          </div>
-        </div>
-      );
-    }
-
-    if (leftSidebarVisible) {
-      return (
-        <div className="flex flex-1">
-          <ActivityBar />
-          <div className="flex flex-1" ref={containerRef}>
-            <Resizable direction="horizontal" className="flex flex-1">
-              <ResizablePanel defaultSize={leftDefault} minSize={leftMin} maxSize={leftMax} onResize={onLeftResize}>
-                <LeftSidebar />
-              </ResizablePanel>
-              <ResizableHandle className="w-px bg-border" />
-              <ResizablePanel>
-                <EnhancedMainEditor />
-              </ResizablePanel>
-            </Resizable>
-          </div>
-        </div>
-      );
-    }
-
-    if (rightSidebarVisible) {
-      return (
-        <div className="flex flex-1">
-          <ActivityBar />
-          <div className="flex flex-1" ref={containerRef}>
-            <Resizable direction="horizontal" className="flex flex-1">
-              <ResizablePanel>
-                <EnhancedMainEditor />
-              </ResizablePanel>
-              <ResizableHandle className="w-px bg-light-border dark:bg-dark-border" />
-              <ResizablePanel defaultSize={rightDefault} minSize={rightMin} maxSize={rightMax} onResize={onRightResize}>
-                <RightSidebar />
-              </ResizablePanel>
-            </Resizable>
-          </div>
-        </div>
-      );
-    }
-
+    // 使用单一的 Resizable 组件，通过 key 属性强制重新创建
     return (
       <div className="flex flex-1">
         <ActivityBar />
-        <EnhancedMainEditor />
+        <div className="flex flex-1" ref={containerRef}>
+          <Resizable 
+            direction="horizontal" 
+            className="flex flex-1"
+            key={layoutKey}
+            id={`layout-${layoutKey}`}
+          >
+            {leftSidebarVisible && (
+              <>
+                <ResizablePanel 
+                  id="left-sidebar"
+                  order={1}
+                  defaultSize={leftDefault} 
+                  minSize={leftMin} 
+                  maxSize={leftMax} 
+                  onResize={onLeftResize}
+                >
+                  <LeftSidebar />
+                </ResizablePanel>
+                <ResizableHandle className="w-px bg-border" />
+              </>
+            )}
+            
+            <ResizablePanel 
+              id="main-editor"
+              order={2}
+            >
+              <EnhancedMainEditor />
+            </ResizablePanel>
+            
+            {rightSidebarVisible && (
+              <>
+                <ResizableHandle className="w-px bg-border" />
+                <ResizablePanel 
+                  id="right-sidebar"
+                  order={3}
+                  defaultSize={rightDefault} 
+                  minSize={rightMin} 
+                  maxSize={rightMax} 
+                  onResize={onRightResize}
+                >
+                  <RightSidebar />
+                </ResizablePanel>
+              </>
+            )}
+          </Resizable>
+        </div>
       </div>
     );
   };
