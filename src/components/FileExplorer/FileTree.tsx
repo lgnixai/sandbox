@@ -5,12 +5,10 @@ import {
   ChevronDown, 
   Folder,
   FolderOpen,
-  File,
   Database,
   Image,
   Code,
-  Globe,
-  Hash
+  Globe
 } from 'lucide-react';
 import { useAppStore } from '@/stores';
 import { type FileNode, type FolderNode, type TreeNode } from '@/stores/fileTreeStore';
@@ -22,7 +20,6 @@ interface FileTreeProps {
 
 export function FileTree({ className }: FileTreeProps) {
   const {
-    nodes,
     selectedNodeId,
     draggedNode,
     dragOverNodeId,
@@ -38,7 +35,6 @@ export function FileTree({ className }: FileTreeProps) {
     endDrag,
     setDragOver,
     handleDrop,
-    startRename,
     commitRename,
     getChildNodes,
     syncFileTreeWithNotes,

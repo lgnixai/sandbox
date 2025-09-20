@@ -348,7 +348,7 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
       const node = state.nodes[nodeId];
       if (!node || !newName.trim()) return;
       
-      const oldName = node.name;
+      // const oldName = node.name; // 暂时未使用
       const oldPath = node.path;
       
       // 更新节点名称和路径

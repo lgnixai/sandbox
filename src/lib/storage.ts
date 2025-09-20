@@ -4,7 +4,7 @@
  */
 
 import { type Note } from '@/stores/notesStore';
-import { type Tab, type Pane } from '@/stores/editorStore';
+import { type Pane } from '@/stores/editorStore';
 
 // 存储键名常量
 const STORAGE_KEYS = {
@@ -19,7 +19,10 @@ const STORAGE_KEYS = {
 // 当前存储版本
 const CURRENT_VERSION = '1.0.0';
 
-export interface StoredNote extends Note {
+export interface StoredNote extends Omit<Note, 'createdAt' | 'updatedAt'> {
+  // 序列化后的日期字段
+  createdAt: string;
+  updatedAt: string;
   // 额外的持久化字段
   tags?: string[];
   pinned?: boolean;
@@ -93,9 +96,9 @@ class BrowserStorage {
         storedNotes[id] = {
           ...note,
           // 确保日期字段可序列化
-          createdAt: note.createdAt instanceof Date ? note.createdAt.toISOString() : note.createdAt,
-          updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : note.updatedAt
-        } as StoredNote;
+          createdAt: note.createdAt instanceof Date ? note.createdAt.toISOString() : String(note.createdAt),
+          updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : String(note.updatedAt)
+        };
       }
       
       localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(storedNotes));
@@ -197,9 +200,19 @@ class BrowserStorage {
       
       if (!notes || !editorState || !fileTreeState) return null;
       
+      // 转换 notes 为 StoredNote 格式
+      const storedNotes: Record<string, StoredNote> = {};
+      for (const [id, note] of Object.entries(notes)) {
+        storedNotes[id] = {
+          ...note,
+          createdAt: note.createdAt instanceof Date ? note.createdAt.toISOString() : String(note.createdAt),
+          updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : String(note.updatedAt)
+        };
+      }
+
       return {
         version: CURRENT_VERSION,
-        notes: notes as Record<string, StoredNote>,
+        notes: storedNotes,
         editorState,
         fileTreeState,
         lastModified: new Date().toISOString()

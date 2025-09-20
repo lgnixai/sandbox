@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Plus, MoreHorizontal, ArrowLeft, ArrowRight } from 'lucide-react';
 import { DraggableTab, type DraggableTabType } from './DraggableTab';
-import { cn } from '@/lib/utils';
+// import { cn } from '@/lib/utils'; // 暂时未使用
 import {
   DropdownMenu,
   DropdownMenuContent,

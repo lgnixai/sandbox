@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { TabBar, type TabType } from '../Obeditor/Tab';
+import { TabBar } from '../Obeditor/Tab';
 import { EnhancedMarkdownEditor } from '../Editor/EnhancedMarkdownEditor';
 import { useAppStore } from '@/stores';
 import { cn } from '@/lib/utils';
@@ -13,8 +13,8 @@ export function EnhancedMainEditor() {
     openNoteInTab,
     closeTab,
     setActiveTab,
-    createPane,
-    closePane,
+    // createPane, // 暂时未使用
+    // closePane, // 暂时未使用
     setActivePane,
     splitTab,
     updateNote,
