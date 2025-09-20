@@ -588,21 +588,28 @@ console.log('Hello, ReNote!');
     // 拖拽操作
     startDrag: (node) => set((state) => {
       state.draggedNode = node;
-      if (node.type === 'file') {
-        (node as FileNode).isDragging = true;
+      // 在 state 中的节点上设置拖拽状态，而不是传入的 node 对象
+      const stateNode = state.nodes[node.id];
+      if (stateNode && stateNode.type === 'file') {
+        (stateNode as FileNode).isDragging = true;
       }
     }),
 
     endDrag: () => set((state) => {
-      if (state.draggedNode?.type === 'file') {
-        (state.draggedNode as FileNode).isDragging = false;
+      if (state.draggedNode) {
+        const stateNode = state.nodes[state.draggedNode.id];
+        if (stateNode && stateNode.type === 'file') {
+          (stateNode as FileNode).isDragging = false;
+        }
       }
       state.draggedNode = null;
       state.dragOverNodeId = null;
       
       // 清除所有拖拽悬停状态
       Object.values(state.nodes).forEach(node => {
-        if (node.type === 'folder') {
+        if (node.type === 'file') {
+          (node as FileNode).isDragging = false;
+        } else if (node.type === 'folder') {
           (node as FolderNode).isDragOver = false;
         }
       });
@@ -631,16 +638,25 @@ console.log('Hello, ReNote!');
       const state = get();
       const targetNode = state.nodes[targetNodeId];
       
-      if (!targetNode || !dragData.node) return;
+      console.log('handleDrop called:', { targetNodeId, dragData, targetNode: targetNode?.name });
+      
+      if (!targetNode || !dragData.node) {
+        console.log('handleDrop: missing target or drag data');
+        return;
+      }
       
       if (dragData.type === 'move') {
         // 移动节点
         if (targetNode.type === 'folder') {
+          console.log('Moving node:', dragData.node.name, 'to folder:', targetNode.name);
           state.moveNode(dragData.node.id, targetNode.path);
           // 拖拽移动后自动保存状态
           setTimeout(() => {
+            console.log('Saving state after drag...');
             get().saveStateToStorage();
           }, 100);
+        } else {
+          console.log('Target is not a folder, cannot drop');
         }
       }
       
@@ -975,8 +991,10 @@ console.log('Hello, ReNote!');
         });
       }
       
-      // 同步文件树
-      get().syncFileTreeWithNotes();
+      // 只有在没有保存的节点结构时才同步文件树
+      if (!fileTreeState?.nodes || Object.keys(fileTreeState.nodes).length === 0) {
+        get().syncFileTreeWithNotes();
+      }
     },
 
     // 保存状态到存储

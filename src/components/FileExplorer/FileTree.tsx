@@ -94,7 +94,14 @@ export function FileTree({ className }: FileTreeProps) {
     // 设置拖拽数据
     e.dataTransfer.effectAllowed = node.type === 'file' ? 'copyLink' : 'move';
     e.dataTransfer.setData('application/json', JSON.stringify({
-      node,
+      node: {
+        id: node.id,
+        name: node.name,
+        type: node.type,
+        path: node.path,
+        parentPath: node.parentPath,
+        fileType: (node as any).fileType
+      },
       type: e.ctrlKey || e.metaKey ? 'link' : 'move'
     }));
     
