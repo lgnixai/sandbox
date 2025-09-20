@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 导入 Obsidian 主题样式 */
+@import './styles/obsidian-theme.css';
+
 @layer base {
   /*
    * Design tokens via CSS variables
