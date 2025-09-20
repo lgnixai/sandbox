@@ -38,7 +38,8 @@ export function FileTree({ className }: FileTreeProps) {
     commitRename,
     getChildNodes,
     syncFileTreeWithNotes,
-    selectFileInEditor
+    selectFileInEditor,
+    renameNoteAndUpdateTabs
   } = useAppStore();
 
   const [newItemName, setNewItemName] = useState('');
@@ -143,9 +144,28 @@ export function FileTree({ className }: FileTreeProps) {
   const handleRenameSubmit = useCallback((nodeId: string) => {
     if (newItemName.trim()) {
       commitRename(nodeId, newItemName.trim());
+      
+      // 如果是文件节点，同时更新对应的笔记标题
+      const nodes = getChildNodes('/workspace');
+      const findNodeRecursively = (nodes: TreeNode[], id: string): TreeNode | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node;
+          if (node.type === 'folder') {
+            const found = findNodeRecursively(getChildNodes(node.path), id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      const node = findNodeRecursively(nodes, nodeId);
+      if (node && node.type === 'file') {
+        renameNoteAndUpdateTabs(nodeId, newItemName.trim());
+      }
+      
       setNewItemName('');
     }
-  }, [newItemName, commitRename]);
+  }, [newItemName, commitRename, getChildNodes, renameNoteAndUpdateTabs]);
 
   // 渲染单个节点
   const renderNode = (node: TreeNode, depth: number = 0) => {

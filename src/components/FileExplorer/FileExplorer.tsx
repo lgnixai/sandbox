@@ -8,7 +8,9 @@ import {
   Database,
   Image,
   Code,
-  Globe
+  Globe,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { useAppStore } from '@/stores';
 import {
@@ -35,7 +37,12 @@ export function FileExplorer() {
     createFileInFolder,
     createFolder,
     addNote,
-    syncFileTreeWithNotes
+    syncFileTreeWithNotes,
+    selectedNodeId,
+    startRename,
+    deleteNoteAndCloseTabs,
+    deleteNode,
+    getChildNodes
   } = useAppStore();
   
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -94,6 +101,43 @@ export function FileExplorer() {
     const folderName = `新文件夹-${Date.now()}`;
     createFolder('/workspace/笔记', folderName);
   }, [createFolder]);
+
+  // 处理重命名选中的文件
+  const handleRenameSelected = useCallback(() => {
+    if (selectedNodeId) {
+      startRename(selectedNodeId);
+    }
+  }, [selectedNodeId, startRename]);
+
+  // 处理删除选中的文件
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedNodeId) {
+      if (confirm('确定要删除这个文件吗？此操作无法撤销。')) {
+        // 先关闭相关的标签页
+        deleteNoteAndCloseTabs(selectedNodeId);
+        // 然后删除文件树节点
+        deleteNode(selectedNodeId);
+        // 同步文件树
+        syncFileTreeWithNotes();
+      }
+    }
+  }, [selectedNodeId, deleteNoteAndCloseTabs, deleteNode, syncFileTreeWithNotes]);
+
+  // 检查当前是否选中了文件
+  const hasSelectedFile = selectedNodeId && (() => {
+    const nodes = getChildNodes('/workspace');
+    const findNodeRecursively = (nodes: any[], id: string): any => {
+      for (const node of nodes) {
+        if (node.id === id) return node;
+        if (node.type === 'folder') {
+          const found = findNodeRecursively(getChildNodes(node.path), id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findNodeRecursively(nodes, selectedNodeId);
+  })();
 
   return (
     <div className="flex flex-col h-full">
@@ -179,6 +223,25 @@ export function FileExplorer() {
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
+          {/* 如果选中了文件，显示文件操作 */}
+          {hasSelectedFile && (
+            <>
+              <ContextMenuItem onClick={handleRenameSelected}>
+                <Edit3 size={16} className="mr-2" />
+                重命名
+              </ContextMenuItem>
+              <ContextMenuItem 
+                onClick={handleDeleteSelected}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 size={16} className="mr-2" />
+                删除
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+            </>
+          )}
+          
+          {/* 创建文件选项 */}
           <ContextMenuItem onClick={() => createNewFile('markdown')}>
             <FileText size={16} className="mr-2" />
             新建 Markdown 文档
