@@ -2,7 +2,7 @@ import { FileText, ArrowLeft } from 'lucide-react'
 import { useAppStore } from '../../stores'
 
 export function BacklinksPanel() {
-  const { notes, panes, activePaneId, openNoteInTab } = useAppStore()
+  const { notes, panes, activePaneId, openNoteInTabWithTitle } = useAppStore()
 
   // 获取当前活动笔记
   const getActiveNote = () => {
@@ -40,7 +40,7 @@ export function BacklinksPanel() {
   const backlinks = getBacklinks()
 
   const handleNoteClick = (noteId: string) => {
-    dispatch({ type: 'OPEN_NOTE_IN_TAB', noteId })
+    openNoteInTabWithTitle(noteId)
   }
 
   if (!activeNote) {

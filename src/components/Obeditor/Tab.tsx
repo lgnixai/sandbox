@@ -239,7 +239,7 @@ const Tab: React.FC<TabProps> = ({
 };
 
 interface TabBarProps {
-  tabs: Tab[];
+  tabs: TabType[];
   onCloseTab: (id: string) => void;
   onActivateTab: (id: string) => void;
   onAddTab: () => void;

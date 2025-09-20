@@ -3,7 +3,7 @@ import { Hash, FileText } from 'lucide-react'
 import { useAppStore } from '../../stores'
 
 export function TagsPanel() {
-  const { notes, setLeftPanel, openNoteInTab } = useAppStore()
+  const { notes, setLeftPanel, openNoteInTabWithTitle } = useAppStore()
 
   // 从笔记中提取标签
   const tags = useMemo(() => {
@@ -39,7 +39,7 @@ export function TagsPanel() {
   }
 
   const handleNoteClick = (noteId: string) => {
-    openNoteInTab(noteId)
+    openNoteInTabWithTitle(noteId)
   }
 
   return (
@@ -83,10 +83,10 @@ interface TagItemProps {
 }
 
 function TagItem({ name, count, noteIds, onTagClick: _, onNoteClick }: TagItemProps) {
-  const { state } = useAppContext()
+  const { notes } = useAppStore()
   const [isExpanded, setIsExpanded] = React.useState(false)
 
-  const notes = noteIds.map(id => state.notes[id]).filter(Boolean)
+  const notesList = noteIds.map(id => notes[id]).filter(Boolean)
 
   return (
     <div className="border border-light-border dark:border-dark-border rounded-lg p-2">
@@ -109,7 +109,7 @@ function TagItem({ name, count, noteIds, onTagClick: _, onNoteClick }: TagItemPr
       {/* 展开的笔记列表 */}
       {isExpanded && (
         <div className="mt-2 ml-4 space-y-1">
-          {notes.map(note => (
+          {notesList.map(note => (
             <div
               key={note.id}
               className="flex items-center p-1 rounded cursor-pointer hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"

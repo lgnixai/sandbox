@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { FileItem } from './FileTree';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Palette, Square, Circle, Minus, Type, Eraser, Save } from 'lucide-react';
+import { Palette, Square, Circle, Minus, Eraser, Save } from 'lucide-react';
 
 interface CanvasEditorProps {
   file: FileItem;
@@ -152,7 +152,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ file, onSave }) => {
     if (!ctx) return;
 
     ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, canvas?.width || 0, canvas?.height || 0);
     saveCanvas();
   };
 

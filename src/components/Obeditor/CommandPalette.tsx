@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { File, Folder, Plus, X, Clock, Search } from 'lucide-react';
+import { File, Plus, X, Clock, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type FileItem } from './FileTree';
 
@@ -235,7 +235,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         <div className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
           {getCategoryTitle(category)}
         </div>
-        {cmds.map((cmd, index) => {
+        {cmds.map((cmd) => {
           const globalIndex = filteredCommands.indexOf(cmd);
           return (
             <Button

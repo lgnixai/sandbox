@@ -1,5 +1,5 @@
 import { useAppContext } from '../../contexts/AppContext'
-import { TabBar } from '../Tabs/TabBar'
+import { TabBar } from '../Obeditor/Tab'
 import { Editor } from '../Editor/Editor'
 import { Resizable, ResizableHandle, ResizablePanel } from '../ui/resizable'
 
@@ -23,7 +23,19 @@ function PaneView({ pane }: { pane: any }) {
   return (
     <div className="split-pane flex-1 flex flex-col bg-light-bg dark:bg-dark-bg">
       {/* 标签栏 */}
-      <TabBar pane={pane} />
+      <TabBar 
+        tabs={pane.tabs} 
+        onCloseTab={() => {}} 
+        onActivateTab={() => {}} 
+        onAddTab={() => {}}
+        onCloseOthers={() => {}}
+        onCloseAll={() => {}}
+        onSplitHorizontal={() => {}}
+        onSplitVertical={() => {}}
+        onToggleLock={() => {}}
+        onDuplicate={() => {}}
+        onRename={() => {}}
+      />
       
       {/* 编辑器 */}
       <div className="flex-1 overflow-hidden">
