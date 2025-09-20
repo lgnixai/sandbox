@@ -66,13 +66,13 @@ export const useEditorStore = create<EditorState & EditorActions>()(
         id: 'main-pane',
         tabs: [
           {
-            id: 'welcome-tab',
-            noteId: 'welcome',
-            title: '欢迎',
+            id: 'new-tab-page',
+            noteId: 'new-tab-page',
+            title: '新标签页',
             isDirty: false
           }
         ],
-        activeTabId: 'welcome-tab'
+        activeTabId: 'new-tab-page'
       }
     ],
     activePaneId: 'main-pane',

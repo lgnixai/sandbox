@@ -104,52 +104,49 @@ export function EnhancedMainEditor() {
   const renderPane = (pane: typeof panes[0]) => {
     const activeTab = pane.tabs.find(tab => tab.id === pane.activeTabId);
     const activeNote = activeTab ? notes[activeTab.noteId] : null;
-    const hasActiveTabs = pane.tabs.length > 0;
 
     return (
       <div className="h-full flex flex-col bg-background">
-        {/* 只有当有标签页时才显示标签栏 */}
-        {hasActiveTabs && (
-          <TabBar
-            tabs={pane.tabs.map(tab => ({
-              ...tab,
-              isActive: tab.id === pane.activeTabId
-            }))}
-            onCloseTab={handleCloseTab(pane.id)}
-            onActivateTab={handleActivateTab(pane.id)}
-            onAddTab={handleAddTab(pane.id)}
-            onCloseOthers={(tabId) => {
-              // 关闭其他标签
-              pane.tabs.forEach(tab => {
-                if (tab.id !== tabId) {
-                  closeTab(tab.id, pane.id);
-                }
-              });
-            }}
+        {/* 始终显示标签栏，即使只有一个标签页 */}
+        <TabBar
+          tabs={pane.tabs.map(tab => ({
+            ...tab,
+            isActive: tab.id === pane.activeTabId
+          }))}
+          onCloseTab={handleCloseTab(pane.id)}
+          onActivateTab={handleActivateTab(pane.id)}
+          onAddTab={handleAddTab(pane.id)}
+          onCloseOthers={(tabId) => {
+            // 关闭其他标签
+            pane.tabs.forEach(tab => {
+              if (tab.id !== tabId) {
+                closeTab(tab.id, pane.id);
+              }
+            });
+          }}
           onCloseAll={() => {
             // 关闭所有标签，但会自动创建新标签页
             pane.tabs.forEach(tab => {
               closeTab(tab.id, pane.id);
             });
           }}
-            onSplitHorizontal={handleSplitHorizontal(pane.id)}
-            onSplitVertical={handleSplitVertical(pane.id)}
-            onToggleLock={(tabId) => {
-              // TODO: 实现标签锁定功能
-              console.log('Toggle lock:', tabId);
-            }}
-            onDuplicate={(tabId) => {
-              // TODO: 实现标签复制功能
-              console.log('Duplicate tab:', tabId);
-            }}
-            onRename={(tabId, newTitle) => {
-              const tab = pane.tabs.find(t => t.id === tabId);
-              if (tab) {
-                updateNote(tab.noteId, { title: newTitle });
-              }
-            }}
-          />
-        )}
+          onSplitHorizontal={handleSplitHorizontal(pane.id)}
+          onSplitVertical={handleSplitVertical(pane.id)}
+          onToggleLock={(tabId) => {
+            // TODO: 实现标签锁定功能
+            console.log('Toggle lock:', tabId);
+          }}
+          onDuplicate={(tabId) => {
+            // TODO: 实现标签复制功能
+            console.log('Duplicate tab:', tabId);
+          }}
+          onRename={(tabId, newTitle) => {
+            const tab = pane.tabs.find(t => t.id === tabId);
+            if (tab) {
+              updateNote(tab.noteId, { title: newTitle });
+            }
+          }}
+        />
         
         {/* 内容区域 */}
         <div className="flex-1 overflow-hidden">
@@ -178,13 +175,20 @@ export function EnhancedMainEditor() {
     );
   };
 
-  // 如果没有面板，显示欢迎界面
+  // 如果没有面板，创建一个默认面板
   if (panes.length === 0) {
-    return (
-      <div className="h-full">
-        <WelcomeScreen />
-      </div>
-    );
+    // 这种情况不应该发生，但为了安全起见，我们创建一个默认面板
+    const defaultPane = {
+      id: 'main-pane',
+      tabs: [{
+        id: 'new-tab-page',
+        noteId: 'new-tab-page',
+        title: '新标签页',
+        isDirty: false
+      }],
+      activeTabId: 'new-tab-page'
+    };
+    return renderPane(defaultPane);
   }
 
   // 单个面板
