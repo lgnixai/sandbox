@@ -32,8 +32,10 @@ export function WelcomeScreen({
       folder: '/workspace/笔记'
     };
     
+    console.log('Creating new note:', newNoteId, 'activePaneId:', activePaneId);
     addNote(newNote);
     syncFileTreeWithNotes();
+    console.log('Opening note in tab...');
     openNoteInTab(newNoteId, activePaneId || undefined);
     
     if (onCreateNewFile) {

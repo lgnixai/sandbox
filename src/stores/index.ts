@@ -326,6 +326,21 @@ console.log('Hello, ReNote!');
       if (!note) return;
 
       set((state) => {
+        // 确保 panes 数组不为空
+        if (state.panes.length === 0) {
+          state.panes = [{
+            id: 'main-pane',
+            tabs: [{
+              id: 'new-tab-page',
+              noteId: 'new-tab-page',
+              title: '新标签页',
+              isDirty: false
+            }],
+            activeTabId: 'new-tab-page'
+          }];
+          state.activePaneId = 'main-pane';
+        }
+
         const targetPaneId = paneId || state.activePaneId || 'main-pane';
         const targetPane = state.panes.find(p => p.id === targetPaneId);
         if (!targetPane) return;
