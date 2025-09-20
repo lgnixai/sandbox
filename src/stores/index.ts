@@ -368,16 +368,9 @@ console.log('Hello, ReNote!');
     selectFileInEditor: (noteId: string, options?: { openMode?: 'preview' | 'pinned' }) => {
       const state = get();
       const note = state.notes[noteId];
-      if (note && state.editorCallbacks.onFileSelect) {
-        const editorFile: EditorFile = {
-          id: note.id,
-          name: note.title,
-          type: 'file',
-          fileType: note.fileType || 'markdown',
-          path: `/${note.title}`,
-          content: note.content
-        };
-        state.editorCallbacks.onFileSelect(editorFile, options);
+      if (note) {
+        // 直接调用 openNoteInTabWithTitle 来打开文件
+        get().openNoteInTabWithTitle(noteId, state.activePaneId || undefined);
       }
     },
 
