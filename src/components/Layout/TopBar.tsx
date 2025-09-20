@@ -10,18 +10,21 @@ import {
   Settings
 } from 'lucide-react'
 import { useAppStore } from '../../stores'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 export function TopBar() {
   const {
     leftSidebarVisible,
     rightSidebarVisible,
     isDarkMode,
+    theme,
     toggleLeftSidebar,
     toggleRightSidebar,
     toggleTheme,
     toggleCommandPalette,
     addNote,
-    openNoteInTab
+    openNoteInTab,
+    setTheme
   } = useAppStore()
 
   const createNewNote = () => {
@@ -41,12 +44,12 @@ export function TopBar() {
   }
 
   return (
-    <div className="flex items-center justify-between h-10 px-3 bg-light-panel dark:bg-dark-panel border-b border-light-border dark:border-dark-border">
+    <div className="flex items-center justify-between h-10 px-3 bg-panel border-b border-border">
       {/* 左侧控制按钮 */}
       <div className="flex items-center space-x-1">
         <button
           onClick={toggleLeftSidebar}
-          className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+          className="p-1.5 rounded hover:bg-nav-hover transition-colors"
           title={leftSidebarVisible ? '隐藏左侧边栏' : '显示左侧边栏'}
         >
           {leftSidebarVisible ? (
@@ -58,7 +61,7 @@ export function TopBar() {
         
         <button
           onClick={toggleRightSidebar}
-          className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+          className="p-1.5 rounded hover:bg-nav-hover transition-colors"
           title={rightSidebarVisible ? '隐藏右侧边栏' : '显示右侧边栏'}
         >
           {rightSidebarVisible ? (
@@ -71,7 +74,7 @@ export function TopBar() {
 
       {/* 中间标题区域 */}
       <div className="flex-1 flex items-center justify-center">
-        <h1 className="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary">
+        <h1 className="text-sm font-medium text-muted-foreground">
           ReNote
         </h1>
       </div>
@@ -80,7 +83,7 @@ export function TopBar() {
       <div className="flex items-center space-x-1">
         <button
           onClick={createNewNote}
-          className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+          className="p-1.5 rounded hover:bg-nav-hover transition-colors"
           title="新建笔记 (Ctrl+N)"
         >
           <Plus size={16} />
@@ -88,22 +91,45 @@ export function TopBar() {
         
         <button
           onClick={toggleCommandPalette}
-          className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+          className="p-1.5 rounded hover:bg-nav-hover transition-colors"
           title="命令面板 (Ctrl+P)"
         >
           <Search size={16} />
         </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="p-1.5 rounded hover:bg-nav-hover transition-colors"
+              title="主题与外观"
+            >
+              {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52 bg-card border border-border">
+            <DropdownMenuLabel>外观</DropdownMenuLabel>
+            <DropdownMenuItem className="text-sm" onClick={toggleTheme}>
+              切换 {isDarkMode ? '浅色' : '暗色'} 模式
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>主题</DropdownMenuLabel>
+            <DropdownMenuItem className="text-sm" onClick={() => setTheme && setTheme('obsidian')}>
+              Obsidian
+              <span className="ml-auto text-xs text-muted-foreground">{theme === 'obsidian' ? '当前' : ''}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-sm" onClick={() => setTheme && setTheme('nord')}>
+              Nord
+              <span className="ml-auto text-xs text-muted-foreground">{theme === 'nord' ? '当前' : ''}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-sm" onClick={() => setTheme && setTheme('solarized')}>
+              Solarized
+              <span className="ml-auto text-xs text-muted-foreground">{theme === 'solarized' ? '当前' : ''}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         
         <button
-          onClick={toggleTheme}
-          className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
-          title={isDarkMode ? '切换到浅色主题' : '切换到暗色主题'}
-        >
-          {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-        
-        <button
-          className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+          className="p-1.5 rounded hover:bg-nav-hover transition-colors"
           title="设置"
         >
           <Settings size={16} />

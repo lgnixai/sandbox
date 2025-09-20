@@ -83,13 +83,13 @@ export function MarkdownEditor({ content, onChange }: MarkdownEditorProps) {
   }
 
   return (
-    <div className="h-full bg-light-bg dark:bg-dark-bg">
+    <div className="h-full bg-background">
       <textarea
         ref={textareaRef}
         value={content}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="w-full h-full p-4 bg-transparent text-light-text dark:text-dark-text font-mono text-sm leading-relaxed resize-none focus:outline-none scrollbar-thin"
+        className="w-full h-full p-4 bg-transparent text-foreground font-mono text-sm leading-relaxed resize-none focus:outline-none scrollbar-thin"
         placeholder="开始输入你的想法..."
         spellCheck={false}
         style={{

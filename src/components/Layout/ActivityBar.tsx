@@ -36,15 +36,15 @@ export function ActivityBar() {
   }
 
   return (
-    <div className="flex flex-col w-12 bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border">
+    <div className="flex flex-col w-12 bg-sidebar border-r border-border text-sidebar-foreground">
       {/* 左侧面板切换按钮 */}
       <div className="flex flex-col">
         <button
           onClick={() => handleSetLeftPanel('files')}
           className={`p-3 flex items-center justify-center transition-colors ${
             leftActivePanel === 'files'
-              ? 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/10 dark:text-dark-accent border-r-2 border-light-accent dark:border-dark-accent'
-              : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+              ? 'bg-primary/10 text-primary border-r-2 border-primary'
+              : 'hover:bg-nav-hover text-muted-foreground'
           }`}
           title="文件"
         >
@@ -55,8 +55,8 @@ export function ActivityBar() {
           onClick={() => handleSetLeftPanel('search')}
           className={`p-3 flex items-center justify-center transition-colors ${
             leftActivePanel === 'search'
-              ? 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/10 dark:text-dark-accent border-r-2 border-light-accent dark:border-dark-accent'
-              : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+              ? 'bg-primary/10 text-primary border-r-2 border-primary'
+              : 'hover:bg-nav-hover text-muted-foreground'
           }`}
           title="搜索"
         >
@@ -67,8 +67,8 @@ export function ActivityBar() {
           onClick={() => handleSetLeftPanel('tags')}
           className={`p-3 flex items-center justify-center transition-colors ${
             leftActivePanel === 'tags'
-              ? 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/10 dark:text-dark-accent border-r-2 border-light-accent dark:border-dark-accent'
-              : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+              ? 'bg-primary/10 text-primary border-r-2 border-primary'
+              : 'hover:bg-nav-hover text-muted-foreground'
           }`}
           title="标签"
         >
@@ -79,8 +79,8 @@ export function ActivityBar() {
           onClick={() => handleSetLeftPanel('plugins')}
           className={`p-3 flex items-center justify-center transition-colors ${
             leftActivePanel === 'plugins'
-              ? 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/10 dark:text-dark-accent border-r-2 border-light-accent dark:border-dark-accent'
-              : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+              ? 'bg-primary/10 text-primary border-r-2 border-primary'
+              : 'hover:bg-nav-hover text-muted-foreground'
           }`}
           title="插件"
         >
@@ -89,7 +89,7 @@ export function ActivityBar() {
       </div>
 
       {/* 分隔线 */}
-      <div className="my-4 mx-2 border-t border-light-border dark:border-dark-border" />
+      <div className="my-4 mx-2 border-t border-border" />
 
       {/* 右侧面板切换按钮 */}
       <div className="flex flex-col">
@@ -97,8 +97,8 @@ export function ActivityBar() {
           onClick={() => handleSetRightPanel('backlinks')}
           className={`p-3 flex items-center justify-center transition-colors ${
             rightActivePanel === 'backlinks'
-              ? 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/10 dark:text-dark-accent border-r-2 border-light-accent dark:border-dark-accent'
-              : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+              ? 'bg-primary/10 text-primary border-r-2 border-primary'
+              : 'hover:bg-nav-hover text-muted-foreground'
           }`}
           title="反向链接"
         >
@@ -109,8 +109,8 @@ export function ActivityBar() {
           onClick={() => handleSetRightPanel('outline')}
           className={`p-3 flex items-center justify-center transition-colors ${
             rightActivePanel === 'outline'
-              ? 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/10 dark:text-dark-accent border-r-2 border-light-accent dark:border-dark-accent'
-              : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+              ? 'bg-primary/10 text-primary border-r-2 border-primary'
+              : 'hover:bg-nav-hover text-muted-foreground'
           }`}
           title="大纲"
         >
@@ -121,8 +121,8 @@ export function ActivityBar() {
           onClick={() => handleSetRightPanel('graph')}
           className={`p-3 flex items-center justify-center transition-colors ${
             rightActivePanel === 'graph'
-              ? 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/10 dark:text-dark-accent border-r-2 border-light-accent dark:border-dark-accent'
-              : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+              ? 'bg-primary/10 text-primary border-r-2 border-primary'
+              : 'hover:bg-nav-hover text-muted-foreground'
           }`}
           title="关系图"
         >

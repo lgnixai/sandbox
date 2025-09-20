@@ -277,16 +277,16 @@ export function CommandPalette() {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-start justify-center pt-20 z-50"
          onClick={() => toggleCommandPalette()}>
-      <div className="w-full max-w-2xl bg-light-bg dark:bg-dark-bg rounded-lg shadow-2xl border border-light-border dark:border-dark-border overflow-hidden"
+      <div className="w-full max-w-2xl bg-background rounded-lg shadow-2xl border border-border overflow-hidden"
            onClick={(e) => e.stopPropagation()}>
         
         {/* 搜索框 */}
-        <div className="flex items-center p-4 border-b border-light-border dark:border-dark-border">
-          <Search size={20} className="text-light-text-secondary dark:text-dark-text-secondary mr-3" />
+        <div className="flex items-center p-4 border-b border-border">
+          <Search size={20} className="text-muted-foreground mr-3" />
           <input
             type="text"
             placeholder="输入命令或搜索笔记..."
-            className="flex-1 bg-transparent text-light-text dark:text-dark-text placeholder-light-text-secondary dark:placeholder-dark-text-secondary outline-none text-lg"
+            className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none text-lg"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
@@ -296,7 +296,7 @@ export function CommandPalette() {
         {/* 命令列表 */}
         <div className="max-h-96 overflow-y-auto">
           {filteredCommands.length === 0 ? (
-            <div className="p-8 text-center text-light-text-secondary dark:text-dark-text-secondary">
+            <div className="p-8 text-center text-muted-foreground">
               <Search size={48} className="mx-auto mb-4 opacity-50" />
               <p>未找到匹配的命令</p>
             </div>
@@ -306,21 +306,21 @@ export function CommandPalette() {
                 key={command.id}
                 className={`flex items-center p-4 cursor-pointer transition-colors ${
                   index === selectedIndex
-                    ? 'bg-light-accent/20 dark:bg-dark-accent/20 text-light-accent dark:text-dark-accent'
-                    : 'hover:bg-light-hover dark:hover:bg-dark-hover'
+                    ? 'bg-primary/15 text-primary'
+                    : 'hover:bg-nav-hover'
                 }`}
                 onClick={() => command.action()}
               >
-                <div className="mr-3 text-light-text-secondary dark:text-dark-text-secondary">
+                <div className="mr-3 text-muted-foreground">
                   {command.icon}
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">{command.title}</div>
-                  <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                  <div className="text-sm text-muted-foreground">
                     {command.description}
                   </div>
                 </div>
-                <div className="text-xs px-2 py-1 rounded bg-light-hover dark:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary">
+                <div className="text-xs px-2 py-1 rounded bg-secondary text-secondary-foreground">
                   {getCategoryBadge(command.category)}
                 </div>
               </div>
@@ -329,7 +329,7 @@ export function CommandPalette() {
         </div>
 
         {/* 底部提示 */}
-        <div className="p-3 border-t border-light-border dark:border-dark-border bg-light-hover dark:bg-dark-hover text-xs text-light-text-secondary dark:text-dark-text-secondary">
+        <div className="p-3 border-t border-border bg-secondary text-muted-foreground text-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <span>↑↓ 导航</span>

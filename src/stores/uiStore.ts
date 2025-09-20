@@ -4,6 +4,7 @@ import { immer } from 'zustand/middleware/immer';
 export interface UIState {
   // 主题相关
   isDarkMode: boolean;
+  theme?: 'obsidian' | 'nord' | 'solarized';
   
   // 侧边栏状态
   leftSidebarVisible: boolean;
@@ -25,6 +26,7 @@ export interface UIState {
 export interface UIActions {
   // 主题操作
   toggleTheme: () => void;
+  setTheme?: (theme: 'obsidian' | 'nord' | 'solarized') => void;
   
   // 侧边栏操作
   toggleLeftSidebar: () => void;
@@ -45,6 +47,7 @@ export const useUIStore = create<UIState & UIActions>()(
   immer((set) => ({
     // 初始状态
     isDarkMode: true,
+    theme: 'obsidian',
     leftSidebarVisible: true,
     rightSidebarVisible: true,
     leftSidebarWidth: 280,
@@ -57,6 +60,9 @@ export const useUIStore = create<UIState & UIActions>()(
     // Actions
     toggleTheme: () => set((state) => {
       state.isDarkMode = !state.isDarkMode;
+    }),
+    setTheme: (theme: 'obsidian' | 'nord' | 'solarized') => set((state) => {
+      state.theme = theme;
     }),
 
     toggleLeftSidebar: () => set((state) => {

@@ -49,11 +49,11 @@ export function Editor({ note }: EditorProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-light-bg dark:bg-dark-bg">
+    <div className="flex flex-col h-full bg-background">
       {/* 编辑器工具栏 */}
-      <div className="flex items-center justify-between p-2 border-b border-light-border dark:border-dark-border bg-light-panel dark:bg-dark-panel">
+      <div className="flex items-center justify-between p-2 border-b border-border bg-panel">
         <div className="flex items-center space-x-1">
-          <span className="text-sm font-medium text-light-text dark:text-dark-text">
+          <span className="text-sm font-medium text-foreground">
             {note.title}
           </span>
         </div>
@@ -63,8 +63,8 @@ export function Editor({ note }: EditorProps) {
             onClick={() => setEditorMode('edit')}
             className={`p-2 rounded text-sm transition-colors ${
               state.editorMode === 'edit'
-                ? 'bg-light-accent text-white dark:bg-dark-accent'
-                : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-nav-hover text-muted-foreground'
             }`}
             title="编辑模式"
           >
@@ -75,8 +75,8 @@ export function Editor({ note }: EditorProps) {
             onClick={() => setEditorMode('preview')}
             className={`p-2 rounded text-sm transition-colors ${
               state.editorMode === 'preview'
-                ? 'bg-light-accent text-white dark:bg-dark-accent'
-                : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-nav-hover text-muted-foreground'
             }`}
             title="预览模式"
           >
@@ -87,8 +87,8 @@ export function Editor({ note }: EditorProps) {
             onClick={() => setEditorMode('split')}
             className={`p-2 rounded text-sm transition-colors ${
               state.editorMode === 'split'
-                ? 'bg-light-accent text-white dark:bg-dark-accent'
-                : 'hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-nav-hover text-muted-foreground'
             }`}
             title="分屏模式"
           >
@@ -112,7 +112,7 @@ export function Editor({ note }: EditorProps) {
         
         {state.editorMode === 'split' && (
           <div className="flex h-full">
-            <div className="flex-1 border-r border-light-border dark:border-dark-border">
+            <div className="flex-1 border-r border-border">
               <MarkdownEditor
                 content={content}
                 onChange={handleContentChange}

@@ -5,7 +5,7 @@ import { ContextMenuProvider } from './components/ContextMenu/ContextMenuProvide
 function App() {
   return (
     <ContextMenuProvider>
-      <div className="w-full h-full bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text overflow-hidden">
+      <div className="w-full h-full bg-background text-foreground overflow-hidden">
         <Layout />
         <CommandPalette />
       </div>
