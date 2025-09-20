@@ -21,11 +21,11 @@ export function RightSidebar() {
 
   return (
     <div 
-      className="bg-light-sidebar dark:bg-dark-sidebar flex flex-col relative min-w-0 h-full"
+      className="bg-sidebar text-sidebar-foreground flex flex-col relative min-w-0 h-full"
     >
       {/* 面板标题 */}
-      <div className="h-8 flex items-center px-3 border-b border-light-border dark:border-dark-border">
-        <span className="text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary uppercase">
+      <div className="h-8 flex items-center px-3 border-b border-border">
+        <span className="text-xs font-medium text-muted-foreground uppercase">
           {rightActivePanel === 'backlinks' && '反向链接'}
           {rightActivePanel === 'outline' && '大纲'}
           {rightActivePanel === 'graph' && '关系图'}

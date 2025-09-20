@@ -8,28 +8,36 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 暗色主题色彩
-        dark: {
-          bg: '#1e1e1e',
-          sidebar: '#252526',
-          panel: '#2d2d30',
-          border: '#3e3e42',
-          text: '#cccccc',
-          'text-secondary': '#969696',
-          accent: '#007acc',
-          hover: '#2a2d2e'
-        },
-        // 浅色主题色彩
-        light: {
-          bg: '#ffffff',
-          sidebar: '#f5f5f5',
-          panel: '#fafafa',
-          border: '#e1e4e8',
-          text: '#24292e',
-          'text-secondary': '#586069',
-          accent: '#0366d6',
-          hover: '#f6f8fa'
-        }
+        // New token colors (mapped to CSS variables)
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        card: 'var(--card)',
+        'card-foreground': 'var(--card-foreground)',
+        panel: 'var(--panel)',
+        sidebar: 'var(--sidebar)',
+        'sidebar-foreground': 'var(--sidebar-foreground)',
+        'sidebar-border': 'var(--sidebar-border)',
+        popover: 'var(--popover)',
+        'popover-foreground': 'var(--popover-foreground)',
+        primary: 'var(--primary)',
+        'primary-foreground': 'var(--primary-foreground)',
+        secondary: 'var(--secondary)',
+        'secondary-foreground': 'var(--secondary-foreground)',
+        muted: 'var(--muted)',
+        'muted-foreground': 'var(--muted-foreground)',
+        accent: 'var(--accent)',
+        'accent-foreground': 'var(--accent-foreground)',
+        destructive: 'var(--destructive)',
+        'destructive-foreground': 'var(--destructive-foreground)',
+        border: 'var(--border)',
+        input: 'var(--input)',
+        ring: 'var(--ring)',
+        // Custom helpers for navigation and tabs
+        'nav-hover': 'var(--nav-hover)',
+        'tab-active': 'var(--tab-active)',
+        'tab-inactive': 'var(--tab-inactive)',
+        'tab-hover': 'var(--tab-hover)',
+        'tab-border': 'var(--tab-border)'
       },
       fontFamily: {
         'mono': ['Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', 'monospace'],
@@ -39,6 +47,9 @@ export default {
       },
       borderRadius: {
         'xs': '0.125rem',
+      },
+      boxShadow: {
+        dropdown: 'var(--shadow-dropdown, 0 8px 24px rgba(0,0,0,0.15))'
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-in-out',

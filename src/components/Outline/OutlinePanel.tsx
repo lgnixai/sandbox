@@ -73,7 +73,7 @@ export function OutlinePanel() {
 
   if (!activeNote) {
     return (
-      <div className="flex items-center justify-center h-32 text-light-text-secondary dark:text-dark-text-secondary">
+      <div className="flex items-center justify-center h-32 text-muted-foreground">
         <div className="text-center">
           <FileText size={32} className="mx-auto mb-2 opacity-50" />
           <p className="text-sm">请选择一个笔记</p>
@@ -85,12 +85,12 @@ export function OutlinePanel() {
   return (
     <div className="flex flex-col h-full">
       {/* 当前笔记信息 */}
-      <div className="p-3 border-b border-light-border dark:border-dark-border">
-        <div className="flex items-center text-sm text-light-text dark:text-dark-text mb-2">
+      <div className="p-3 border-b border-border">
+        <div className="flex items-center text-sm text-foreground mb-2">
           <List size={14} className="mr-2" />
           <span className="font-medium truncate">{activeNote.title}</span>
         </div>
-        <div className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
+        <div className="text-xs text-muted-foreground">
           {outline.length} 个标题
         </div>
       </div>
@@ -98,7 +98,7 @@ export function OutlinePanel() {
       {/* 大纲列表 */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {outline.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-light-text-secondary dark:text-dark-text-secondary">
+          <div className="flex items-center justify-center h-32 text-muted-foreground">
             <div className="text-center">
               <Hash size={32} className="mx-auto mb-2 opacity-50" />
               <p className="text-sm mb-1">暂无大纲</p>

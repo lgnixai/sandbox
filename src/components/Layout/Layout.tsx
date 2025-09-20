@@ -79,11 +79,11 @@ export function Layout() {
             <ResizablePanel defaultSize={leftDefault} minSize={leftMin} maxSize={leftMax} onResize={onLeftResize}>
               <LeftSidebar />
             </ResizablePanel>
-            <ResizableHandle className="w-px bg-light-border dark:bg-dark-border" />
+            <ResizableHandle className="w-px bg-border" />
             <ResizablePanel>
               <MainEditor />
             </ResizablePanel>
-            <ResizableHandle className="w-px bg-light-border dark:bg-dark-border" />
+            <ResizableHandle className="w-px bg-border" />
             <ResizablePanel defaultSize={rightDefault} minSize={rightMin} maxSize={rightMax} onResize={onRightResize}>
               <RightSidebar />
             </ResizablePanel>
@@ -102,7 +102,7 @@ export function Layout() {
             <ResizablePanel defaultSize={leftDefault} minSize={leftMin} maxSize={leftMax} onResize={onLeftResize}>
               <LeftSidebar />
             </ResizablePanel>
-            <ResizableHandle className="w-px bg-light-border dark:bg-dark-border" />
+            <ResizableHandle className="w-px bg-border" />
             <ResizablePanel>
               <MainEditor />
             </ResizablePanel>
@@ -140,7 +140,7 @@ export function Layout() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="flex flex-col w-full h-full bg-background text-foreground">
       {/* 顶部工具栏 */}
       <TopBar />
       

@@ -24,11 +24,11 @@ export function LeftSidebar() {
 
   return (
     <div 
-      className="bg-light-sidebar dark:bg-dark-sidebar flex flex-col min-w-0 h-full"
+      className="bg-sidebar text-sidebar-foreground flex flex-col min-w-0 h-full"
     >
       {/* 面板标题 */}
-      <div className="h-8 flex items-center px-3 border-b border-light-border dark:border-dark-border">
-        <span className="text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary uppercase">
+      <div className="h-8 flex items-center px-3 border-b border-border">
+        <span className="text-xs font-medium text-muted-foreground uppercase">
           {leftActivePanel === 'files' && '文件'}
           {leftActivePanel === 'search' && '搜索'}
           {leftActivePanel === 'tags' && '标签'}

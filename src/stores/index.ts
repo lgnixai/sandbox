@@ -26,6 +26,7 @@ export const useAppStore = create<AppState & AppActions>()(
     // 直接定义初始状态，而不是从子 stores 获取
     // UI 状态
     isDarkMode: false,
+    theme: 'obsidian' as 'obsidian' | 'nord' | 'solarized',
     leftSidebarVisible: true,
     rightSidebarVisible: true,
     leftSidebarWidth: 280,
@@ -152,6 +153,9 @@ console.log('Hello, ReNote!');
     // UI Actions
     toggleTheme: () => set((state) => {
       state.isDarkMode = !state.isDarkMode;
+    }),
+    setTheme: (theme: 'obsidian' | 'nord' | 'solarized') => set((state) => {
+      state.theme = theme;
     }),
     toggleLeftSidebar: () => set((state) => {
       state.leftSidebarVisible = !state.leftSidebarVisible;
@@ -399,6 +403,12 @@ useAppStore.subscribe((state) => {
   } else {
     document.documentElement.classList.remove('dark');
   }
+  // 设置多主题 data 属性
+  document.documentElement.setAttribute('data-theme', state.theme || 'obsidian');
+  try {
+    localStorage.setItem('app-theme', state.theme || 'obsidian');
+    localStorage.setItem('app-dark', state.isDarkMode ? '1' : '0');
+  } catch {}
 });
 
 // 导出类型

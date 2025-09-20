@@ -134,3 +134,27 @@ src/
 ## License
 
 MIT License
+
+## 主题与外观
+
+我们提供统一的、Obsidian 风格的设计令牌（Design Tokens），并内置多主题：`obsidian`、`nord`、`solarized`，支持暗/浅两种模式。
+
+- Token 类名示例：`bg-background`、`text-foreground`、`border-border`、`bg-panel`、`bg-card`、`hover:bg-nav-hover`、`bg-tab-active`。
+- 变量定义位置：`src/index.css`（`:root`、`.dark` 和 `html[data-theme]`）。
+- Tailwind 映射：`tailwind.config.js` 中的 `theme.extend.colors` 将 Token 映射到 CSS 变量。
+- 启动时防闪烁：`src/main.tsx` 会读取 LocalStorage，优先应用主题与暗色模式。
+
+在代码中使用 Token：
+```tsx
+<div className="bg-background text-foreground border border-border" />
+<button className="hover:bg-nav-hover" />
+```
+
+在运行时切换主题/模式：
+```ts
+import { useAppStore } from './src/stores'
+
+const { setTheme, toggleTheme } = useAppStore.getState()
+setTheme('nord') // obsidian | nord | solarized
+toggleTheme()    // 在暗/浅之间切换
+```
