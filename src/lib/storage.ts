@@ -33,6 +33,8 @@ export interface FileTreeState {
   expandedFolders: string[];
   selectedFileId: string | null;
   folderStructure: FolderNode[];
+  // 添加完整的节点结构以支持拖拽后的状态持久化
+  nodes?: Record<string, any>; // TreeNode 的序列化版本
 }
 
 export interface FolderNode {

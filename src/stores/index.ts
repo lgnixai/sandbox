@@ -3,7 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 import { enableMapSet } from 'immer';
 import { type UIState, type UIActions } from './uiStore';
 import { type NotesState, type NotesActions } from './notesStore';
-import { type EditorState, type EditorActions, type EditorFile } from './editorStore';
+import { type EditorState, type EditorActions } from './editorStore';
 import { type FileTreeState, type FileTreeActions, type FileNode, type FolderNode } from './fileTreeStore';
 import { storage } from '@/lib/storage';
 import { UnlinkedMentionsCalculator } from '@/lib/unlinkedMentions';
@@ -233,6 +233,8 @@ console.log('Hello, ReNote!');
       });
       // 计算未链接提及
       setTimeout(() => get().calculateAndUpdateUnlinkedMentions(), 100);
+      // 保存状态到本地存储
+      setTimeout(() => get().saveStateToStorage(), 200);
     },
     updateNote: (noteId, updates) => {
       set((state) => {
@@ -365,7 +367,7 @@ console.log('Hello, ReNote!');
     },
 
     // 重写需要跨 store 协作的 actions
-    selectFileInEditor: (noteId: string, options?: { openMode?: 'preview' | 'pinned' }) => {
+    selectFileInEditor: (noteId: string, _options?: { openMode?: 'preview' | 'pinned' }) => {
       const state = get();
       const note = state.notes[noteId];
       if (note) {
@@ -398,6 +400,9 @@ console.log('Hello, ReNote!');
           });
         });
       });
+      
+      // 保存状态到本地存储
+      setTimeout(() => get().saveStateToStorage(), 200);
     },
 
     deleteNoteAndCloseTabs: (noteId: string) => {
@@ -414,6 +419,9 @@ console.log('Hello, ReNote!');
         });
         state.panes = state.panes.filter(pane => pane.tabs.length > 0);
       });
+      
+      // 保存状态到本地存储
+      setTimeout(() => get().saveStateToStorage(), 200);
     },
 
     // 文件树定位（暂时仅更新选中项；如需滚动到视图，由组件侧处理）
@@ -629,6 +637,10 @@ console.log('Hello, ReNote!');
         // 移动节点
         if (targetNode.type === 'folder') {
           state.moveNode(dragData.node.id, targetNode.path);
+          // 拖拽移动后自动保存状态
+          setTimeout(() => {
+            get().saveStateToStorage();
+          }, 100);
         }
       }
       
@@ -725,6 +737,8 @@ console.log('Hello, ReNote!');
       };
       
       get().addNode(newFile);
+      // 保存状态到本地存储
+      setTimeout(() => get().saveStateToStorage(), 200);
       return fileId;
     },
 
@@ -741,14 +755,69 @@ console.log('Hello, ReNote!');
       };
       
       get().addNode(newFolder);
+      // 保存状态到本地存储
+      setTimeout(() => get().saveStateToStorage(), 200);
       return folderId;
     },
 
     deleteFolder: (folderPath) => {
-      const folder = Object.values(get().nodes).find(n => n.path === folderPath && n.type === 'folder');
-      if (folder) {
-        get().deleteNode(folder.id);
-      }
+      const state = get();
+      const folder = Object.values(state.nodes).find(n => n.path === folderPath && n.type === 'folder');
+      if (!folder) return;
+
+      // 收集文件夹内所有的文件节点
+      const collectFileNodes = (folderPath: string): string[] => {
+        const fileIds: string[] = [];
+        Object.values(state.nodes).forEach(node => {
+          if (node.path.startsWith(folderPath + '/') || node.parentPath === folderPath) {
+            if (node.type === 'file') {
+              fileIds.push(node.id);
+            } else if (node.type === 'folder') {
+              // 递归收集子文件夹中的文件
+              fileIds.push(...collectFileNodes(node.path));
+            }
+          }
+        });
+        return fileIds;
+      };
+
+      const fileIdsToDelete = collectFileNodes(folderPath);
+      
+      set((state) => {
+        // 删除所有文件对应的笔记
+        fileIdsToDelete.forEach(fileId => {
+          delete state.notes[fileId];
+        });
+
+        // 关闭所有相关标签页
+        state.panes.forEach(pane => {
+          pane.tabs = pane.tabs.filter(tab => !fileIdsToDelete.includes(tab.noteId));
+          // 如果当前活跃标签页被删除，选择第一个可用标签页
+          if (pane.activeTabId && !pane.tabs.find(tab => tab.id === pane.activeTabId)) {
+            pane.activeTabId = pane.tabs[0]?.id || null;
+          }
+        });
+        
+        // 如果面板没有标签页了，创建新标签页
+        state.panes.forEach(pane => {
+          if (pane.tabs.length === 0) {
+            const newTabId = `new-tab-${Date.now()}`;
+            pane.tabs = [{
+              id: newTabId,
+              noteId: 'new-tab-page',
+              title: '新标签页',
+              isDirty: false
+            }];
+            pane.activeTabId = newTabId;
+          }
+        });
+      });
+
+      // 删除文件树节点
+      get().deleteNode(folder.id);
+      
+      // 保存状态到本地存储
+      setTimeout(() => get().saveStateToStorage(), 200);
     },
 
     // 未链接提及更新
@@ -899,6 +968,10 @@ console.log('Hello, ReNote!');
         set((state) => {
           state.expandedFolders = new Set(fileTreeState.expandedFolders);
           state.selectedNodeId = fileTreeState.selectedFileId;
+          // 如果有保存的节点结构，恢复它
+          if (fileTreeState.nodes) {
+            state.nodes = fileTreeState.nodes;
+          }
         });
       }
       
@@ -921,7 +994,8 @@ console.log('Hello, ReNote!');
       storage.saveFileTreeState({
         expandedFolders: Array.from(state.expandedFolders),
         selectedFileId: state.selectedNodeId,
-        folderStructure: []
+        folderStructure: [],
+        nodes: state.nodes // 保存完整的节点结构
       });
     },
 

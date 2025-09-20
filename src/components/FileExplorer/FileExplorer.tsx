@@ -42,6 +42,7 @@ export function FileExplorer() {
     startRename,
     deleteNoteAndCloseTabs,
     deleteNode,
+    deleteFolder,
     getChildNodes
   } = useAppStore();
   
@@ -109,22 +110,46 @@ export function FileExplorer() {
     }
   }, [selectedNodeId, startRename]);
 
-  // 处理删除选中的文件
+  // 处理删除选中的文件或文件夹
   const handleDeleteSelected = useCallback(() => {
     if (selectedNodeId) {
-      if (confirm('确定要删除这个文件吗？此操作无法撤销。')) {
-        // 先关闭相关的标签页
-        deleteNoteAndCloseTabs(selectedNodeId);
-        // 然后删除文件树节点
-        deleteNode(selectedNodeId);
+      // 获取选中的节点信息
+      const nodes = getChildNodes('/workspace');
+      const findNodeRecursively = (nodes: any[], id: string): any => {
+        for (const node of nodes) {
+          if (node.id === id) return node;
+          if (node.type === 'folder') {
+            const found = findNodeRecursively(getChildNodes(node.path), id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      const selectedNode = findNodeRecursively(nodes, selectedNodeId);
+      if (!selectedNode) return;
+      
+      const isFolder = selectedNode.type === 'folder';
+      const itemType = isFolder ? '文件夹' : '文件';
+      const confirmMessage = `确定要删除这个${itemType}吗？${isFolder ? '文件夹内的所有文件和子文件夹也会被删除，相关的标签页也会被关闭。' : ''}此操作无法撤销。`;
+      
+      if (confirm(confirmMessage)) {
+        if (isFolder) {
+          // 删除文件夹
+          deleteFolder(selectedNode.path);
+        } else {
+          // 删除文件，先关闭相关的标签页
+          deleteNoteAndCloseTabs(selectedNodeId);
+          deleteNode(selectedNodeId);
+        }
         // 同步文件树
         syncFileTreeWithNotes();
       }
     }
-  }, [selectedNodeId, deleteNoteAndCloseTabs, deleteNode, syncFileTreeWithNotes]);
+  }, [selectedNodeId, deleteNoteAndCloseTabs, deleteNode, deleteFolder, getChildNodes, syncFileTreeWithNotes]);
 
-  // 检查当前是否选中了文件
-  const hasSelectedFile = selectedNodeId && (() => {
+  // 检查当前是否选中了文件或文件夹
+  const hasSelectedItem = selectedNodeId && (() => {
     const nodes = getChildNodes('/workspace');
     const findNodeRecursively = (nodes: any[], id: string): any => {
       for (const node of nodes) {
@@ -223,8 +248,8 @@ export function FileExplorer() {
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          {/* 如果选中了文件，显示文件操作 */}
-          {hasSelectedFile && (
+          {/* 如果选中了文件或文件夹，显示操作选项 */}
+          {hasSelectedItem && (
             <>
               <ContextMenuItem onClick={handleRenameSelected}>
                 <Edit3 size={16} className="mr-2" />
