@@ -19,28 +19,20 @@ export function EnhancedMainEditor() {
     setActivePane,
     splitTab,
     updateNote,
+    addNote,
+    syncFileTreeWithNotes,
     selectedNodeId,
-    selectNode
+    selectNode,
+    selectFileInEditor
   } = useAppStore();
 
-  // 监听文件树选中状态变化
+  // 监听文件树选中状态变化 - 简化逻辑避免循环依赖
   useEffect(() => {
     if (selectedNodeId && notes[selectedNodeId]) {
-      // 在当前活跃面板打开笔记
-      openNoteInTab(selectedNodeId, activePaneId || undefined);
+      // 直接调用 selectFileInEditor，它会处理标签页逻辑
+      selectFileInEditor(selectedNodeId, { openMode: 'preview' });
     }
-  }, [selectedNodeId, openNoteInTab, activePaneId, notes]);
-
-  // 监听标签页激活状态变化，同步到文件树
-  useEffect(() => {
-    const activePane = panes.find(p => p.id === activePaneId);
-    if (activePane?.activeTabId) {
-      const activeTab = activePane.tabs.find(t => t.id === activePane.activeTabId);
-      if (activeTab) {
-        selectNode(activeTab.noteId);
-      }
-    }
-  }, [activePaneId, panes, selectNode]);
+  }, [selectedNodeId, notes, selectFileInEditor]);
 
   // 处理标签页关闭
   const handleCloseTab = useCallback((paneId: string) => (tabId: string) => {
@@ -76,9 +68,10 @@ export function EnhancedMainEditor() {
       folder: '/workspace/笔记'
     };
     
-    updateNote(newNoteId, newNote);
+    addNote(newNote);
+    syncFileTreeWithNotes();
     openNoteInTab(newNoteId, paneId);
-  }, [updateNote, openNoteInTab]);
+  }, [addNote, syncFileTreeWithNotes, openNoteInTab]);
 
   // 处理分屏
   const handleSplitHorizontal = useCallback((paneId: string) => (tabId: string) => {
