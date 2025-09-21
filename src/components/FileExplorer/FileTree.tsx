@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FsNode } from '@/api/fs';
-import { getTree, createFile as apiCreateFile, createFolder as apiCreateFolder, movePath as apiMovePath } from '@/api/fs';
+import { getTree, createFile as apiCreateFile, createFolder as apiCreateFolder, movePath as apiMovePath, deletePath as apiDeletePath } from '@/api/fs';
 import { connectWS, addFsListener } from '@/lib/ws';
 import { useAppStore } from '@/stores';
 
@@ -58,6 +58,9 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   const [rootItems, setRootItems] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+  const expandedRef = useRef<Set<string>>(new Set());
+  const dragSourceIdRef = useRef<string | null>(null);
   
   // 防抖定时器引用
   const refreshTimeoutRef = useRef<number | null>(null);
@@ -86,7 +89,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
         path: n.path,
         parentId,
         children: n.type === 'folder' ? [] : undefined,
-        isExpanded: n.type === 'folder' ? (n.path === '/' ? true : false) : undefined,
+        isExpanded: n.type === 'folder' ? expandedRef.current.has(n.path) : undefined,
       };
       map[id] = item;
       if (!parentId) {
@@ -159,6 +162,17 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
 
   // Load from backend & subscribe to realtime updates
   useEffect(() => {
+    // 恢复展开状态
+    try {
+      const raw = localStorage.getItem('renote.filetree.expanded');
+      if (raw) {
+        const arr = JSON.parse(raw) as string[];
+        const set = new Set(arr);
+        setExpandedPaths(set);
+        expandedRef.current = set;
+      }
+    } catch {}
+
     // 初始加载
     loadTree();
     
@@ -179,16 +193,31 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
     };
   }, []); // 移除 loadTree 依赖，避免无限循环
 
+  // 持久化展开状态
+  useEffect(() => {
+    expandedRef.current = expandedPaths;
+    try { localStorage.setItem('renote.filetree.expanded', JSON.stringify(Array.from(expandedPaths))); } catch {}
+  }, [expandedPaths]);
+
   // Notify parent on tree changes
   useEffect(() => {
     onTreeChange?.(files);
   }, [files, onTreeChange]);
 
   const toggleExpand = useCallback((id: string) => {
-    setFiles(prev => ({
-      ...prev,
-      [id]: { ...prev[id], isExpanded: !prev[id].isExpanded }
-    }));
+    setFiles(prev => {
+      const next = { ...prev } as Record<string, FileItem>;
+      const current = next[id];
+      if (!current) return prev;
+      const newExpanded = !current.isExpanded;
+      next[id] = { ...current, isExpanded: newExpanded };
+      setExpandedPaths((s) => {
+        const ns = new Set(s);
+        if (newExpanded) ns.add(current.path); else ns.delete(current.path);
+        return ns;
+      });
+      return next;
+    });
   }, []);
 
   const createNewItem = useCallback(async (parentId: string | null, type: 'file' | 'folder', fileType?: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
@@ -212,6 +241,14 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       await apiCreateFile(newPath, defaultContent);
     }
     await loadTree();
+    // 保持父级及新建项展开
+    const parentPathToKeep = parentId ? files[parentId].path : undefined;
+    if (parentPathToKeep) {
+      setExpandedPaths((s) => new Set(s).add(parentPathToKeep));
+    }
+    if (type === 'folder') {
+      setExpandedPaths((s) => new Set(s).add(newPath));
+    }
     setEditingId(toId(newPath));
     setNewItemName(defaultName);
   }, [files, loadTree, toId]);
@@ -230,22 +267,74 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
     setNewItemName('');
   }, [files, loadTree]);
 
-  const { selectFileInEditor, selectNode } = useAppStore();
+  const { editorCallbacks, selectNode, selectedNodeId } = useAppStore();
 
   // 处理文件/文件夹点击
   const handleNodeClick = useCallback((file: FileItem) => {
-    if (file.type === 'file' && onFileSelect) {
-      onFileSelect(file);
-      // 使用文件路径而不是 ID 来加载文件
-      selectFileInEditor(file.path, { openMode: 'preview' });
-      
-      // 同步选中状态到文件树
+    if (file.type === 'file') {
+      onFileSelect?.(file);
+      // 通知编辑器打开
+      editorCallbacks.onFileSelect?.({
+        id: file.id,
+        name: file.name,
+        type: 'file',
+        fileType: file.fileType,
+        path: file.path,
+      } as any, { openMode: 'preview' });
+      // 同步树选中
       selectNode(file.id);
-      
     } else if (file.type === 'folder') {
       toggleExpand(file.id);
     }
-  }, [onFileSelect, toggleExpand, selectFileInEditor, selectNode]);
+  }, [onFileSelect, toggleExpand, editorCallbacks, selectNode]);
+
+  const handleDelete = useCallback(async (item: FileItem) => {
+    try {
+      await apiDeletePath(item.path);
+      await loadTree();
+      // 若删除的是选中项，清除选中
+      if (selectedNodeId === item.id) {
+        selectNode(null as any);
+      }
+    } catch (e) {
+      console.error('Delete failed', e);
+    }
+  }, [loadTree, selectNode, selectedNodeId]);
+
+  const handleDragStart = useCallback((item: FileItem, e: React.DragEvent) => {
+    if (editingId) return;
+    dragSourceIdRef.current = item.id;
+    try { e.dataTransfer.setData('text/plain', item.id); } catch {}
+    e.dataTransfer.effectAllowed = 'move';
+  }, [editingId]);
+
+  const handleDragOverFolder = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDropOnFolder = useCallback(async (target: FileItem, e: React.DragEvent) => {
+    e.preventDefault();
+    if (target.type !== 'folder') return;
+    const sourceId = dragSourceIdRef.current || ((): string | null => {
+      try { return e.dataTransfer.getData('text/plain'); } catch { return null; }
+    })();
+    if (!sourceId) return;
+    const source = files[sourceId];
+    if (!source || source.id === target.id) return;
+    const newPath = `${target.path}/${source.name}`.replace(/\/+/g, '/');
+    if (newPath === source.path) return;
+    try {
+      await apiMovePath(source.path, newPath);
+      // 目标自动展开
+      setExpandedPaths((s) => new Set(s).add(target.path));
+      await loadTree();
+    } catch (err) {
+      console.error('Move failed:', err);
+    } finally {
+      dragSourceIdRef.current = null;
+    }
+  }, [files, loadTree]);
 
   // 处理双击（固定标签页）
   const handleNodeDoubleClick = useCallback((file: FileItem) => {
@@ -258,7 +347,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
 
   function Tree({ item }: { item: FileItem }) {
     const isEditing = editingId === item.id;
-    const isSelected = selectedFileId === item.id;
+    const isSelected = (selectedFileId || selectedNodeId) === item.id;
     const typeLabel = getFileTypeLabel(item.fileType);
 
     return (
@@ -274,6 +363,8 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
           )}
           onClick={() => !isEditing && handleNodeClick(item)}
           onDoubleClick={() => !isEditing && handleNodeDoubleClick(item)}
+          draggable={!isEditing}
+          onDragStart={(e) => handleDragStart(item, e)}
         >
           {/* Selection indicator bar */}
           {isSelected && (
@@ -377,12 +468,18 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
                   </DropdownMenuItem>
                 </>
               )}
+              <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(item)}>
+                删除
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         {item.type === 'folder' && item.isExpanded && item.children && (
-          <SidebarMenuSub>
+          <SidebarMenuSub
+            onDragOver={handleDragOverFolder}
+            onDrop={(e) => handleDropOnFolder(item, e)}
+          >
             {item.children.map(childId => {
               const childItem = files[childId];
               return childItem ? <Tree key={childId} item={childItem} /> : null;
