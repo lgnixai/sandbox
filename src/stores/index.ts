@@ -3,7 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 import { enableMapSet } from 'immer';
 import { type UIState, type UIActions } from './uiStore';
 import { type NotesState, type NotesActions } from './notesStore';
-import { type EditorState, type EditorActions, type EditorFile } from './editorStore';
+import { type EditorState, type EditorActions } from './editorStore';
 import { type FileTreeState, type FileTreeActions, type FileNode, type FolderNode } from './fileTreeStore';
 import { storage } from '@/lib/storage';
 import { UnlinkedMentionsCalculator } from '@/lib/unlinkedMentions';
@@ -339,19 +339,46 @@ console.log('Hello, ReNote!');
     },
 
     // 重写需要跨 store 协作的 actions
-    selectFileInEditor: (noteId: string, options?: { openMode?: 'preview' | 'pinned' }) => {
+    selectFileInEditor: (noteId: string, _options?: { openMode?: 'preview' | 'pinned' }) => {
       const state = get();
       const note = state.notes[noteId];
-      if (note && state.editorCallbacks.onFileSelect) {
-        const editorFile: EditorFile = {
-          id: note.id,
-          name: note.title,
-          type: 'file',
-          fileType: note.fileType || 'markdown',
-          path: `/${note.title}`,
-          content: note.content
+      
+      if (note) {
+        // 如果笔记存在于 notes store 中，直接打开
+        state.openNoteInTabWithTitle(noteId);
+      } else {
+        // 如果笔记不存在，可能是从后端 API 加载的文件
+        // 尝试从文件路径加载文件内容
+        const loadAndOpenFile = async (filePath: string) => {
+          try {
+            const { getFile } = await import('@/api/fs');
+            const fileData = await getFile(filePath);
+            
+            // 创建临时笔记
+            const tempNote = {
+              id: noteId,
+              title: filePath.split('/').pop() || '未知文件',
+              content: fileData.content,
+              links: [],
+              backlinks: [],
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              fileType: 'markdown' as const,
+              folder: filePath.substring(0, filePath.lastIndexOf('/')) || '/'
+            };
+            
+            // 添加到 notes store
+            state.addNote(tempNote);
+            
+            // 打开标签页
+            state.openNoteInTabWithTitle(noteId);
+          } catch (error) {
+            console.error('Failed to load file:', error);
+          }
         };
-        state.editorCallbacks.onFileSelect(editorFile, options);
+        
+        // 假设 noteId 就是文件路径，尝试加载
+        loadAndOpenFile(noteId);
       }
     },
 
