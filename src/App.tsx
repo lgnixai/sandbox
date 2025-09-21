@@ -8,12 +8,9 @@ function App() {
     <ContextMenuProvider>
       <div className="w-full h-full bg-background text-foreground overflow-hidden">
         <div className="flex h-full">
-          <div className="w-1/2">
-            <TestLayout />
-          </div>
-          <div className="w-1/2 border-l border-gray-200 dark:border-gray-700">
-            <DocumentManager />
-          </div>
+             <TestLayout />
+         
+          
         </div>
         <CommandPalette />
       </div>
