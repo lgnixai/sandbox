@@ -49,8 +49,7 @@ export function FileExplorer() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   // 创建新文件
-  const createNewFile = useCallback((type: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
-    const id = `note-${Date.now()}`;
+  const createNewFile = useCallback(async (type: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
     let title = '新文件';
     let content = '';
     
@@ -77,31 +76,40 @@ export function FileExplorer() {
         break;
     }
     
-    // 添加笔记
-    addNote({
-      id,
-      title,
-      content,
-      links: [],
-      backlinks: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      fileType: type,
-      folder: '/workspace/笔记'
-    });
-    
-    // 同步文件树
-    syncFileTreeWithNotes();
-    
-    // 创建文件节点
-    createFileInFolder('/workspace/笔记', title, type);
+    try {
+      // 创建文件节点（这会调用后端API）
+      const fileId = await createFileInFolder('/workspace/笔记', title, type);
+      
+      // 添加笔记
+      addNote({
+        id: fileId,
+        title,
+        content,
+        links: [],
+        backlinks: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        fileType: type,
+        folder: '/workspace/笔记'
+      });
+      
+      // 同步文件树
+      await syncFileTreeWithNotes();
+    } catch (error) {
+      console.error('创建文件失败:', error);
+    }
   }, [addNote, createFileInFolder, syncFileTreeWithNotes]);
 
   // 创建新文件夹
-  const createNewFolder = useCallback(() => {
+  const createNewFolder = useCallback(async () => {
     const folderName = `新文件夹-${Date.now()}`;
-    createFolder('/workspace/笔记', folderName);
-  }, [createFolder]);
+    try {
+      await createFolder('/workspace/笔记', folderName);
+      await syncFileTreeWithNotes();
+    } catch (error) {
+      console.error('创建文件夹失败:', error);
+    }
+  }, [createFolder, syncFileTreeWithNotes]);
 
   // 处理重命名选中的文件
   const handleRenameSelected = useCallback(() => {
@@ -143,7 +151,7 @@ export function FileExplorer() {
           deleteNode(selectedNodeId);
         }
         // 同步文件树
-        syncFileTreeWithNotes();
+        syncFileTreeWithNotes().catch(console.error);
       }
     }
   }, [selectedNodeId, deleteNoteAndCloseTabs, deleteNode, deleteFolder, getChildNodes, syncFileTreeWithNotes]);

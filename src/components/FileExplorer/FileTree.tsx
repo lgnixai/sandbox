@@ -47,7 +47,7 @@ export function FileTree({ className }: FileTreeProps) {
 
   // 同步文件树与笔记数据
   useEffect(() => {
-    syncFileTreeWithNotes();
+    syncFileTreeWithNotes().catch(console.error);
   }, [syncFileTreeWithNotes]);
 
   // 获取文件图标

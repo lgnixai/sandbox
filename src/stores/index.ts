@@ -23,7 +23,8 @@ export type AppActions = UIActions & NotesActions & EditorActions & FileTreeActi
   revealInExplorer: (noteId: string) => void;
   
   // 文件树与笔记同步方法
-  syncFileTreeWithNotes: () => void;
+  syncFileTreeWithNotes: () => Promise<void>;
+  syncFileTreeWithNotesOriginal: () => void;
   loadStateFromStorage: () => void;
   saveStateToStorage: () => void;
   
@@ -739,7 +740,7 @@ console.log('Hello, ReNote!');
       });
     }),
 
-    // 批量操作
+    // 批量操作 - 现在与后端同步
     createFileInFolder: (parentPath, fileName, fileType = 'markdown') => {
       const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const newFile: FileNode = {
@@ -753,6 +754,54 @@ console.log('Hello, ReNote!');
       };
       
       get().addNode(newFile);
+      
+      // 异步调用后端API创建文件
+      (async () => {
+        try {
+          const { documentApi } = await import('@/lib/api/documentApi');
+          const response = await documentApi.createDocument({
+            title: fileName.replace(/\.[^/.]+$/, ''), // 移除扩展名作为标题
+            type: fileType === 'markdown' ? 'markdown' : 
+                  fileType === 'html' ? 'html' : 
+                  fileType === 'code' ? 'text' : 'markdown',
+            content: newFile.content || '',
+            parent_path: parentPath === '/workspace' ? '' : parentPath.replace('/workspace/', '')
+          });
+
+          if (response.code === 0 && response.data) {
+            // 更新节点ID为后端ID
+            const backendFileId = `backend-${response.data.id}`;
+            set((state) => {
+              // 删除临时节点
+              delete state.nodes[fileId];
+              delete state.notes[fileId];
+              
+              // 添加后端节点
+              const backendFile: FileNode = {
+                ...newFile,
+                id: backendFileId
+              };
+              state.nodes[backendFileId] = backendFile;
+              
+              // 添加到notes
+              state.notes[backendFileId] = {
+                id: backendFileId,
+                title: fileName.replace(/\.[^/.]+$/, ''),
+                content: newFile.content || '',
+                links: [],
+                backlinks: [],
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                fileType,
+                folder: parentPath
+              };
+            });
+          }
+        } catch (error) {
+          console.error('后端创建文件失败，保持前端状态:', error);
+        }
+      })();
+      
       // 保存状态到本地存储
       setTimeout(() => get().saveStateToStorage(), 200);
       return fileId;
@@ -771,6 +820,36 @@ console.log('Hello, ReNote!');
       };
       
       get().addNode(newFolder);
+      
+      // 异步调用后端API创建文件夹
+      (async () => {
+        try {
+          const { documentApi } = await import('@/lib/api/documentApi');
+          const response = await documentApi.createDirectory({
+            name: folderName,
+            parent_path: parentPath === '/workspace' ? '' : parentPath.replace('/workspace/', '')
+          });
+
+          if (response.code === 0 && response.data) {
+            // 更新节点ID为后端ID
+            const backendFolderId = `backend-${response.data.id}`;
+            set((state) => {
+              // 删除临时节点
+              delete state.nodes[folderId];
+              
+              // 添加后端节点
+              const backendFolder: FolderNode = {
+                ...newFolder,
+                id: backendFolderId
+              };
+              state.nodes[backendFolderId] = backendFolder;
+            });
+          }
+        } catch (error) {
+          console.error('后端创建文件夹失败，保持前端状态:', error);
+        }
+      })();
+      
       // 保存状态到本地存储
       setTimeout(() => get().saveStateToStorage(), 200);
       return folderId;
@@ -889,8 +968,100 @@ console.log('Hello, ReNote!');
       return ancestors.every(ancestorPath => state.expandedFolders.has(ancestorPath));
     },
 
-    // 文件树与笔记同步方法
-    syncFileTreeWithNotes: () => {
+    // 文件树与笔记同步方法 - 现在从后端获取数据
+    syncFileTreeWithNotes: async () => {
+      try {
+        // 从后端API获取文件树数据
+        const { documentApi } = await import('@/lib/api/documentApi');
+        const response = await documentApi.getFileTree();
+        
+        if (response.code === 0 && response.data) {
+          const backendNodes = response.data.nodes || [];
+          
+          set((state) => {
+            // 清空现有节点
+            state.nodes = {};
+            
+            // 创建根文件夹
+            const workspaceFolder: FolderNode = {
+              id: 'folder-workspace',
+              name: '工作区',
+              type: 'folder',
+              path: '/workspace',
+              parentPath: '/',
+              isExpanded: state.expandedFolders.has('/workspace'),
+              childCount: backendNodes.length
+            };
+            state.nodes[workspaceFolder.id] = workspaceFolder;
+            
+            // 转换后端数据到前端格式 - 现在后端已返回正确的路径格式
+            backendNodes.forEach((backendNode) => {
+              const nodeId = `backend-${backendNode.id}`;
+              
+              if (backendNode.type === 'file') {
+                // 创建文件节点
+                const fileNode: FileNode = {
+                  id: nodeId,
+                  name: backendNode.name,
+                  type: 'file',
+                  fileType: backendNode.fileType === 'markdown' ? 'markdown' : 
+                           backendNode.fileType === 'html' ? 'html' :
+                           backendNode.fileType === 'code' ? 'code' : 'markdown',
+                  path: backendNode.path,        // 直接使用后端路径
+                  parentPath: backendNode.parentPath, // 直接使用后端父路径
+                  content: '', // 内容按需加载
+                  unlinkedMentions: 0
+                };
+                state.nodes[nodeId] = fileNode;
+                
+                // 同步到 notes store
+                if (!state.notes[nodeId]) {
+                  state.notes[nodeId] = {
+                    id: nodeId,
+                    title: backendNode.name.replace(/\.[^/.]+$/, ''), // 移除文件扩展名
+                    content: '', // 内容按需加载
+                    links: [],
+                    backlinks: [],
+                    createdAt: new Date(backendNode.modified_at || Date.now()),
+                    updatedAt: new Date(backendNode.modified_at || Date.now()),
+                    fileType: backendNode.fileType === 'markdown' ? 'markdown' : 
+                             backendNode.fileType === 'html' ? 'html' :
+                             backendNode.fileType === 'code' ? 'code' : 'markdown',
+                    folder: backendNode.parentPath
+                  };
+                }
+              } else if (backendNode.type === 'folder') {
+                // 创建文件夹节点
+                const folderNode: FolderNode = {
+                  id: nodeId,
+                  name: backendNode.name,
+                  type: 'folder',
+                  path: backendNode.path,        // 直接使用后端路径
+                  parentPath: backendNode.parentPath, // 直接使用后端父路径
+                  isExpanded: state.expandedFolders.has(backendNode.path),
+                  childCount: 0 // 后续可以递归计算
+                };
+                state.nodes[nodeId] = folderNode;
+              }
+            });
+          });
+          
+          // 计算未链接提及（基于后端数据）
+          const counts = unlinkedMentionsCalculator.calculate(get().notes);
+          get().updateUnlinkedMentions(counts);
+        } else {
+          // 如果后端API失败，回退到原有逻辑
+          console.warn('后端API获取失败，使用前端数据:', response.message);
+          get().syncFileTreeWithNotesOriginal();
+        }
+      } catch (error) {
+        console.error('同步后端数据失败，使用前端数据:', error);
+        get().syncFileTreeWithNotesOriginal();
+      }
+    },
+    
+    // 保留原有的同步逻辑
+    syncFileTreeWithNotesOriginal: () => {
       // 先计算未链接提及
       const counts = unlinkedMentionsCalculator.calculate(get().notes);
       
