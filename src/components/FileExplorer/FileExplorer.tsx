@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   Plus,
   Search,
@@ -8,9 +8,10 @@ import {
   Database,
   Image,
   Code,
-  Globe
+  Globe,
+  RefreshCw
 } from 'lucide-react';
-import { useAppStore } from '@/stores';
+import { useFileSystemStore, useEditorStore, useNoteStore } from '@/stores/unified';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,69 +32,84 @@ import { Input } from '../ui/input';
 export function FileExplorer() {
   const {
     searchQuery,
-    setSearchQuery,
-    createFileInFolder,
+    search,
+    clearSearch,
+    loadTree,
+    createFile,
     createFolder,
-    addNote,
-    syncFileTreeWithNotes
-  } = useAppStore();
+    loading
+  } = useFileSystemStore();
+  
+  const { createNote } = useNoteStore();
+  const { openFile } = useEditorStore();
   
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+
+  // 初始加载文件树
+  useEffect(() => {
+    loadTree();
+  }, [loadTree]);
 
   // 创建新文件
-  const createNewFile = useCallback((type: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
-    const id = `note-${Date.now()}`;
-    let title = '新文件';
-    let content = '';
+  const createNewFile = useCallback(async (type: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
+    const parentPath = '/workspace/notes';
+    let fileName = '';
     
     switch (type) {
       case 'markdown':
-        title = '新笔记';
-        content = '# 新笔记\n\n开始编辑这个笔记...';
+        fileName = `新笔记-${Date.now()}.md`;
         break;
       case 'database':
-        title = '新数据库';
-        content = JSON.stringify({ columns: ['ID', '名称', '类型'], rows: [] }, null, 2);
+        fileName = `新数据库-${Date.now()}.db`;
         break;
       case 'canvas':
-        title = '新画板';
-        content = '';
+        fileName = `新画板-${Date.now()}.canvas`;
         break;
       case 'html':
-        title = '新页面';
-        content = '<!DOCTYPE html>\n<html>\n<head>\n    <title>Document</title>\n</head>\n<body>\n    <h1>Hello World!</h1>\n</body>\n</html>';
+        fileName = `新页面-${Date.now()}.html`;
         break;
       case 'code':
-        title = '新代码';
-        content = '// JavaScript 代码\nconsole.log("Hello World!");';
+        fileName = `新代码-${Date.now()}.js`;
         break;
     }
     
-    // 添加笔记
-    addNote({
-      id,
-      title,
-      content,
-      links: [],
-      backlinks: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      fileType: type,
-      folder: '/workspace/笔记'
-    });
-    
-    // 同步文件树
-    syncFileTreeWithNotes();
-    
-    // 创建文件节点
-    createFileInFolder('/workspace/笔记', title, type);
-  }, [addNote, createFileInFolder, syncFileTreeWithNotes]);
+    // 创建文件
+    if (type === 'markdown') {
+      const path = `${parentPath}/${fileName}`;
+      const title = fileName.replace('.md', '');
+      const note = await createNote(path, title);
+      
+      if (note) {
+        openFile(note.id, note.name);
+      }
+    } else {
+      await createFile(parentPath, fileName, type);
+      // TODO: 获取创建的文件并打开
+    }
+  }, [createFile, createNote, openFile]);
 
   // 创建新文件夹
-  const createNewFolder = useCallback(() => {
+  const createNewFolder = useCallback(async () => {
+    const parentPath = '/workspace/notes';
     const folderName = `新文件夹-${Date.now()}`;
-    createFolder('/workspace/笔记', folderName);
+    await createFolder(parentPath, folderName);
   }, [createFolder]);
+
+  // 搜索处理
+  const handleSearch = useCallback((query: string) => {
+    setLocalSearchQuery(query);
+    if (query.trim()) {
+      search(query);
+    } else {
+      clearSearch();
+    }
+  }, [search, clearSearch]);
+
+  // 刷新文件树
+  const handleRefresh = useCallback(() => {
+    loadTree();
+  }, [loadTree]);
 
   return (
     <div className="flex flex-col h-full">
@@ -151,6 +167,15 @@ export function FileExplorer() {
           
           <button
             className="p-1 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            title="刷新"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
+          
+          <button
+            className="p-1 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
             title="更多选项"
           >
             <MoreHorizontal size={14} />
@@ -164,8 +189,8 @@ export function FileExplorer() {
           <Input
             type="text"
             placeholder="搜索文件..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={localSearchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
             className="h-7 text-xs"
           />
         </div>
