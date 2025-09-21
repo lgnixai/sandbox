@@ -269,6 +269,18 @@ export class FileSystemEventHandler {
   private async handleFileNodeMoved(event: FileNodeMovedEvent) {
     const store = this.getStore();
     
+    // 0. 如果有后端ID，先调用后端移动API
+    try {
+      const node = store.nodes[event.nodeId] as any;
+      const backendId: number | undefined = node?.backendId || (typeof node?.id === 'string' && node.id.startsWith('backend-') ? parseInt(node.id.replace('backend-', ''), 10) : undefined);
+      if (backendId) {
+        const normalizedParentPath = event.newParentPath === '/workspace' ? '' : event.newParentPath.replace(/^\/workspace\//, '');
+        await documentApi.moveDocument(backendId, normalizedParentPath);
+      }
+    } catch (err) {
+      console.error('[FileSystemEventHandler] Error moving document in backend:', err);
+    }
+
     // 1. 更新文件树节点路径
     store.moveNode(event.nodeId, event.newParentPath);
     
@@ -289,8 +301,28 @@ export class FileSystemEventHandler {
   private async handleFolderNodeCreated(event: FolderNodeCreatedEvent) {
     const store = this.getStore();
     
-    // 更新文件树状态
-    store.addNode(event.node);
+    try {
+      const parentPath = event.node.parentPath === '/workspace' ? '' : event.node.parentPath.replace(/^\/workspace\//, '');
+      const response = await documentApi.createDirectory({
+        name: event.node.name,
+        parent_path: parentPath
+      });
+      if (response.code === 0 && response.data) {
+        const backendFolderId = `backend-${response.data.id}`;
+        const backendFolder = {
+          ...event.node,
+          id: backendFolderId,
+          backendId: response.data.id
+        } as any;
+        store.addNode(backendFolder);
+      } else {
+        // 回退到本地添加
+        store.addNode(event.node);
+      }
+    } catch (err) {
+      console.error('[FileSystemEventHandler] Error creating directory in backend:', err);
+      store.addNode(event.node);
+    }
     
     console.log(`[FileSystemEventHandler] Folder node created: ${event.node.name}`);
   }
@@ -301,23 +333,26 @@ export class FileSystemEventHandler {
   private async handleFolderNodeDeleted(event: FolderNodeDeletedEvent) {
     const store = this.getStore();
     
-    // 1. 收集文件夹内所有文件
-    const childNodes = Object.values(store.nodes).filter(node => 
-      node.path.startsWith(event.node.path + '/') || node.parentPath === event.node.path
-    );
-    
-    // 2. 为每个子文件发布删除事件
-    childNodes.forEach(childNode => {
-      if (childNode.type === 'file') {
-        eventBus.publish({
-          type: 'file.node.deleted',
-          nodeId: childNode.id,
-          node: childNode
-        } as FileNodeDeletedEvent);
+    try {
+      // 先尝试后端删除目录（如有后端ID或可从ID解析）
+      const node = store.nodes[event.nodeId] as any;
+      const backendId: number | undefined = node?.backendId || (typeof node?.id === 'string' && node.id.startsWith('backend-') ? parseInt(node.id.replace('backend-', ''), 10) : undefined);
+      if (backendId) {
+        await documentApi.deleteDocument(backendId);
+      } else {
+        // 后端ID未知，则逐个删除子文件和子目录（通过事件触发，以便后端删除）
+        const childNodes = Object.values(store.nodes).filter(n => n.path.startsWith(event.node.path + '/') || n.parentPath === event.node.path);
+        for (const child of childNodes) {
+          if (child.type === 'file') {
+            eventBus.publish({ type: 'file.node.deleted', nodeId: child.id, node: child } as FileNodeDeletedEvent);
+          }
+        }
       }
-    });
-    
-    // 3. 删除文件夹节点
+    } catch (err) {
+      console.error('[FileSystemEventHandler] Error deleting directory in backend:', err);
+    }
+
+    // 最后删除前端节点
     store.deleteNode(event.nodeId);
     
     console.log(`[FileSystemEventHandler] Folder node deleted: ${event.node.name}`);
