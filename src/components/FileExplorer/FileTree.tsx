@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FsNode } from '@/api/fs';
-import { getTree, createFile as apiCreateFile, createFolder as apiCreateFolder, movePath as apiMovePath } from '@/api/fs';
+import { getTree, createFile as apiCreateFile, createFolder as apiCreateFolder, movePath as apiMovePath, deletePath as apiDeletePath } from '@/api/fs';
 import { connectWS, addFsListener } from '@/lib/ws';
 import { useAppStore } from '@/stores';
 
@@ -30,6 +30,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,9 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   const [rootItems, setRootItems] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
+  const [draggedItem, setDraggedItem] = useState<FileItem | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   
   // 防抖定时器引用
   const refreshTimeoutRef = useRef<number | null>(null);
@@ -86,7 +90,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
         path: n.path,
         parentId,
         children: n.type === 'folder' ? [] : undefined,
-        isExpanded: n.type === 'folder' ? (n.path === '/' ? true : false) : undefined,
+        isExpanded: n.type === 'folder' ? (n.path === '/' ? true : expandedFolders.has(id)) : undefined,
       };
       map[id] = item;
       if (!parentId) {
@@ -115,7 +119,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
     } catch (error) {
       console.error('Failed to load tree:', error);
     }
-  }, [buildFromFs, onTreeChange]);
+  }, [buildFromFs, onTreeChange, expandedFolders]);
 
   // 防抖刷新函数 - 避免频繁的文件系统事件触发过多 API 调用
   const debouncedRefresh = useCallback(() => {
@@ -185,11 +189,24 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   }, [files, onTreeChange]);
 
   const toggleExpand = useCallback((id: string) => {
-    setFiles(prev => ({
-      ...prev,
-      [id]: { ...prev[id], isExpanded: !prev[id].isExpanded }
-    }));
-  }, []);
+    setFiles(prev => {
+      const newFiles = {
+        ...prev,
+        [id]: { ...prev[id], isExpanded: !prev[id].isExpanded }
+      };
+      
+      // 更新展开状态集合
+      const newExpanded = new Set(expandedFolders);
+      if (newFiles[id].isExpanded) {
+        newExpanded.add(id);
+      } else {
+        newExpanded.delete(id);
+      }
+      setExpandedFolders(newExpanded);
+      
+      return newFiles;
+    });
+  }, [expandedFolders]);
 
   const createNewItem = useCallback(async (parentId: string | null, type: 'file' | 'folder', fileType?: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
     const parentPath = parentId ? files[parentId].path : '';
@@ -210,11 +227,39 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       await apiCreateFolder(newPath);
     } else {
       await apiCreateFile(newPath, defaultContent);
+      
+      // 创建文件后自动打开在标签页中
+      const newFile: FileItem = {
+        id: toId(newPath),
+        name: defaultName,
+        type: 'file',
+        fileType: fileType,
+        path: newPath,
+        parentId: parentId,
+        content: defaultContent
+      };
+      
+      // 创建笔记并打开标签页
+      const tempNote = {
+        id: newPath,
+        title: defaultName.replace(/\.(md|db|canvas|html|js)$/, ''),
+        content: defaultContent,
+        links: [],
+        backlinks: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        fileType: fileType || 'markdown' as const,
+        folder: parentPath || '/'
+      };
+      
+      const { addNote } = useAppStore.getState();
+      addNote(tempNote);
+      openNoteInTabWithTitle(newPath);
     }
     await loadTree();
     setEditingId(toId(newPath));
     setNewItemName(defaultName);
-  }, [files, loadTree, toId]);
+  }, [files, loadTree, toId, openNoteInTabWithTitle]);
 
   const handleRename = useCallback(async (id: string, newName: string) => {
     if (!newName.trim()) { setEditingId(null); setNewItemName(''); return; }
@@ -230,54 +275,178 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
     setNewItemName('');
   }, [files, loadTree]);
 
-  const { selectFileInEditor, selectNode } = useAppStore();
+  // 处理拖拽开始
+  const handleDragStart = useCallback((e: React.DragEvent, item: FileItem) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.path);
+  }, []);
+
+  // 处理拖拽进入
+  const handleDragEnter = useCallback((e: React.DragEvent, item: FileItem) => {
+    e.preventDefault();
+    if (draggedItem && item.type === 'folder' && item.id !== draggedItem.id) {
+      setDragOverId(item.id);
+    }
+  }, [draggedItem]);
+
+  // 处理拖拽离开
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverId(null);
+  }, []);
+
+  // 处理拖拽悬停
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  // 处理放置
+  const handleDrop = useCallback(async (e: React.DragEvent, targetItem: FileItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverId(null);
+
+    if (!draggedItem || draggedItem.id === targetItem.id) return;
+
+    // 如果目标是文件夹，则移动到该文件夹内
+    if (targetItem.type === 'folder') {
+      const newPath = `${targetItem.path}/${draggedItem.name}`.replace(/\/\/+/g, '/');
+      
+      // 检查是否是移动到自己的子文件夹
+      if (draggedItem.type === 'folder' && newPath.startsWith(draggedItem.path + '/')) {
+        alert('不能将文件夹移动到其子文件夹中');
+        return;
+      }
+
+      try {
+        await apiMovePath(draggedItem.path, newPath);
+        await loadTree();
+      } catch (error) {
+        console.error('Failed to move:', error);
+        alert('移动失败：' + (error as Error).message);
+      }
+    }
+  }, [draggedItem, loadTree]);
+
+  // 处理拖拽结束
+  const handleDragEnd = useCallback(() => {
+    setDraggedItem(null);
+    setDragOverId(null);
+  }, []);
+
+  const { selectFileInEditor, selectNode, openNoteInTabWithTitle } = useAppStore();
 
   // 处理文件/文件夹点击
-  const handleNodeClick = useCallback((file: FileItem) => {
-    if (file.type === 'file' && onFileSelect) {
-      onFileSelect(file);
-      // 使用文件路径而不是 ID 来加载文件
-      selectFileInEditor(file.path, { openMode: 'preview' });
+  const handleNodeClick = useCallback(async (file: FileItem) => {
+    if (file.type === 'file') {
+      if (onFileSelect) {
+        onFileSelect(file);
+      }
       
-      // 同步选中状态到文件树
-      selectNode(file.id);
+      // 使用文件路径加载文件并在标签页中打开
+      try {
+        const { getFile } = await import('@/api/fs');
+        const fileData = await getFile(file.path);
+        
+        // 创建临时笔记对象
+        const tempNote = {
+          id: file.path,
+          title: file.name,
+          content: fileData.content,
+          links: [],
+          backlinks: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          fileType: file.fileType || 'markdown' as const,
+          folder: file.path.substring(0, file.path.lastIndexOf('/')) || '/'
+        };
+        
+        // 添加到 notes store 并打开标签页
+        const { addNote } = useAppStore.getState();
+        addNote(tempNote);
+        openNoteInTabWithTitle(file.path);
+        
+        // 同步选中状态到文件树
+        selectNode(file.id);
+      } catch (error) {
+        console.error('Failed to load file:', error);
+      }
       
     } else if (file.type === 'folder') {
       toggleExpand(file.id);
     }
-  }, [onFileSelect, toggleExpand, selectFileInEditor, selectNode]);
+  }, [onFileSelect, toggleExpand, openNoteInTabWithTitle, selectNode]);
 
   // 处理双击（固定标签页）
-  const handleNodeDoubleClick = useCallback((file: FileItem) => {
-    if (file.type === 'file' && onFileSelect) {
-      // 双击文件时，可以触发特殊的打开模式，比如固定标签页
-      // 这里先保持和单击相同的逻辑，后续可以根据需要扩展
-      onFileSelect(file);
+  const handleNodeDoubleClick = useCallback(async (file: FileItem) => {
+    if (file.type === 'file') {
+      // 双击文件时，以固定模式打开
+      try {
+        const { getFile } = await import('@/api/fs');
+        const fileData = await getFile(file.path);
+        
+        // 创建临时笔记对象
+        const tempNote = {
+          id: file.path,
+          title: file.name,
+          content: fileData.content,
+          links: [],
+          backlinks: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          fileType: file.fileType || 'markdown' as const,
+          folder: file.path.substring(0, file.path.lastIndexOf('/')) || '/'
+        };
+        
+        // 添加到 notes store 并以固定模式打开标签页
+        const { addNote } = useAppStore.getState();
+        addNote(tempNote);
+        openNoteInTabWithTitle(file.path);
+        
+        // TODO: 实现固定标签页功能
+        if (onFileSelect) {
+          onFileSelect(file);
+        }
+      } catch (error) {
+        console.error('Failed to load file:', error);
+      }
     }
-  }, [onFileSelect]);
+  }, [onFileSelect, openNoteInTabWithTitle]);
 
   function Tree({ item }: { item: FileItem }) {
     const isEditing = editingId === item.id;
     const isSelected = selectedFileId === item.id;
+    const isDragOver = dragOverId === item.id;
     const typeLabel = getFileTypeLabel(item.fileType);
 
     return (
       <SidebarMenuItem key={item.id}>
         <div
           className={cn(
-            "flex items-center gap-1 px-1 py-0.5 cursor-pointer group relative",
-            "text-xs transition-colors duration-150",
-            "min-h-[24px]", // Obsidian specification: 24px row height
+            "flex items-center gap-1 px-2 py-0.5 cursor-pointer group relative",
+            "text-[13px] transition-all duration-150",
+            "h-[24px]", // Obsidian specification: 24px row height
             isSelected 
-              ? "bg-file-selected/10 text-file-selected" 
-              : "text-file-default hover:bg-background-hover hover:text-file-hover"
+              ? "bg-file-selected/10 text-file-selected font-medium" 
+              : "text-file-default hover:bg-background-hover hover:text-file-hover",
+            isDragOver && "bg-blue-500/20 ring-1 ring-blue-500/50",
+            draggedItem?.id === item.id && "opacity-50"
           )}
           onClick={() => !isEditing && handleNodeClick(item)}
           onDoubleClick={() => !isEditing && handleNodeDoubleClick(item)}
+          draggable={!isEditing}
+          onDragStart={(e) => handleDragStart(e, item)}
+          onDragEnter={(e) => handleDragEnter(e, item)}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, item)}
+          onDragEnd={handleDragEnd}
         >
           {/* Selection indicator bar */}
           {isSelected && (
-            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-file-selected" />
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-file-selected transition-all duration-150" />
           )}
 
           {item.type === 'folder' && (
@@ -291,9 +460,9 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
               }}
             >
               {item.isExpanded ? (
-                <ChevronDown className="h-3 w-3 text-folder-icon" />
+                <ChevronDown className="h-3 w-3 text-folder-icon transition-transform duration-150" />
               ) : (
-                <ChevronRight className="h-3 w-3 text-folder-icon" />
+                <ChevronRight className="h-3 w-3 text-folder-icon transition-transform duration-150" />
               )}
             </Button>
           )}
@@ -332,6 +501,11 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
               {typeLabel && (
                 <span className="px-1.5 py-0.5 text-[9px] font-medium bg-muted/50 text-muted-foreground rounded-sm uppercase tracking-wide shrink-0">
                   {typeLabel}
+                </span>
+              )}
+              {item.type === 'file' && (item as any).unlinkedMentions > 0 && (
+                <span className="ml-auto mr-1 px-1.5 py-0.5 text-[11px] font-medium bg-muted/50 text-muted-foreground rounded-full min-w-[18px] h-[18px] flex items-center justify-center hover:bg-interactive-accent hover:text-white transition-all duration-150 hover:scale-110">
+                  {(item as any).unlinkedMentions}
                 </span>
               )}
             </div>
@@ -377,6 +551,23 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
                   </DropdownMenuItem>
                 </>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={async () => {
+                  if (confirm(`确定要删除 "${item.name}" ${item.type === 'folder' ? '文件夹及其所有内容' : '文件'}吗？`)) {
+                    try {
+                      await apiDeletePath(item.path);
+                      await loadTree();
+                    } catch (error) {
+                      console.error('Failed to delete:', error);
+                      alert('删除失败：' + (error as Error).message);
+                    }
+                  }
+                }}
+                className="text-destructive hover:text-destructive"
+              >
+                删除
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

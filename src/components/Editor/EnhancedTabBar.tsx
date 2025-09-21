@@ -92,7 +92,7 @@ export function EnhancedTabBar({
   const normalTabs = tabs.filter(tab => !tab.isPinned);
 
   return (
-    <div className="flex items-center bg-panel border-b border-border h-9">
+    <div className="flex items-center bg-tab-bar-background border-b border-tab-border h-9">
       {/* 导航控制 */}
       {(onNavigateBack || onNavigateForward) && (
         <div className="flex items-center px-2 border-r border-border">
@@ -176,10 +176,9 @@ export function EnhancedTabBar({
         {/* 拖拽时的插入指示器 */}
         {dragOverIndex !== null && (
           <div
-            className="absolute w-0.5 h-6 bg-blue-500 pointer-events-none transition-all duration-150"
+            className="absolute w-0.5 h-[70%] bg-interactive-accent pointer-events-none transition-all duration-150 top-[15%]"
             style={{
-              left: `${dragOverIndex * 150}px`,
-              top: '6px'
+              left: `${dragOverIndex * 150}px`
             }}
           />
         )}

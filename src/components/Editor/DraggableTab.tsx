@@ -103,12 +103,12 @@ export function DraggableTab({
     <div
       ref={tabRef}
       className={cn(
-        "group relative flex items-center min-w-0 h-8 px-3",
+        "group relative flex items-center min-w-[100px] max-w-[200px] h-9 px-3",
         "border-r border-tab-border transition-all duration-150",
         tab.isActive 
-          ? "bg-tab-active text-foreground" 
-          : "bg-tab-inactive text-muted-foreground hover:bg-tab-hover",
-        tab.isPreview && "italic",
+          ? "bg-tab-active text-foreground shadow-[0_1px_0_var(--background-primary)]" 
+          : "bg-tab-inactive text-muted-foreground hover:bg-tab-hover hover:text-foreground",
+        tab.isPreview && "italic opacity-80",
         isDragOver && "bg-blue-500/20 border-blue-500",
         "cursor-pointer select-none"
       )}
@@ -142,15 +142,15 @@ export function DraggableTab({
       
       {/* 标签标题 */}
       <span className={cn(
-        "flex-1 text-sm truncate mr-2",
-        tab.isPreview && "opacity-80"
-      )}>
+        "flex-1 text-[13px] truncate mr-2",
+        tab.isActive && "font-medium"
+      )} title={tab.title}>
         {tab.title}
       </span>
       
       {/* 修改指示器 */}
       {tab.isDirty && (
-        <Circle className="w-2 h-2 fill-current text-primary mr-2 flex-shrink-0" />
+        <Circle className="w-2 h-2 fill-current text-primary mr-2 flex-shrink-0 opacity-80" />
       )}
       
       {/* 下拉菜单 */}
@@ -217,10 +217,10 @@ export function DraggableTab({
       {!tab.isPinned && !tab.isLocked && (
         <button
           className={cn(
-            "flex items-center justify-center w-5 h-5",
+            "flex items-center justify-center w-4 h-4",
             "opacity-0 hover:bg-nav-hover rounded",
-            "transition-opacity duration-150",
-            (isHovered || tab.isActive) && "opacity-100"
+            "transition-all duration-150",
+            (isHovered || tab.isActive) && "opacity-70 hover:opacity-100"
           )}
           onClick={handleClose}
         >
