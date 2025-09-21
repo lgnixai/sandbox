@@ -66,6 +66,9 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   // 防抖定时器引用
   const refreshTimeoutRef = useRef<number | null>(null);
 
+  // 从 store 中获取需要的函数
+  const { selectNode, openNoteInTabWithTitle } = useAppStore();
+
   const toId = useCallback((p: string) => p, []);
 
   const buildFromFs = useCallback((node: FsNode): { map: Record<string, FileItem>; roots: string[] } => {
@@ -115,11 +118,11 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       const { map, roots } = buildFromFs(data);
       setFiles(map);
       setRootItems(roots);
-      onTreeChange?.(map);
+      // 移除 onTreeChange 调用，避免循环
     } catch (error) {
       console.error('Failed to load tree:', error);
     }
-  }, [buildFromFs, onTreeChange, expandedFolders]);
+  }, [buildFromFs, expandedFolders]);
 
   // 防抖刷新函数 - 避免频繁的文件系统事件触发过多 API 调用
   const debouncedRefresh = useCallback(() => {
@@ -186,7 +189,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   // Notify parent on tree changes
   useEffect(() => {
     onTreeChange?.(files);
-  }, [files, onTreeChange]);
+  }, [files]); // 移除 onTreeChange 依赖，避免无限循环
 
   const toggleExpand = useCallback((id: string) => {
     setFiles(prev => {
@@ -209,7 +212,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   }, [expandedFolders]);
 
   const createNewItem = useCallback(async (parentId: string | null, type: 'file' | 'folder', fileType?: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
-    const parentPath = parentId ? files[parentId].path : '';
+    const parentPath = parentId ? files[parentId]?.path : '';
     let defaultName = type === 'folder' ? '新文件夹' : '新文件.md';
     let defaultContent = '';
     if (type === 'file') {
@@ -227,17 +230,6 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       await apiCreateFolder(newPath);
     } else {
       await apiCreateFile(newPath, defaultContent);
-      
-      // 创建文件后自动打开在标签页中
-      const newFile: FileItem = {
-        id: toId(newPath),
-        name: defaultName,
-        type: 'file',
-        fileType: fileType,
-        path: newPath,
-        parentId: parentId,
-        content: defaultContent
-      };
       
       // 创建笔记并打开标签页
       const tempNote = {
@@ -335,8 +327,6 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
     setDraggedItem(null);
     setDragOverId(null);
   }, []);
-
-  const { selectFileInEditor, selectNode, openNoteInTabWithTitle } = useAppStore();
 
   // 处理文件/文件夹点击
   const handleNodeClick = useCallback(async (file: FileItem) => {
