@@ -10,7 +10,7 @@ export function EnhancedMainEditor() {
   const {
     notes,
     panes,
-    // activePaneId, // 暂时未使用
+    activePaneId,
     openNoteInTab,
     closeTab,
     setActiveTab,
