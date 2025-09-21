@@ -1,0 +1,213 @@
+# 钜恒产品展示网站
+
+基于PocketBase和Go语言开发的外贸产品展示网站，用于展示超级电容器、连接器和连接线等产品。
+
+## 功能特性
+
+- 🚀 基于PocketBase的现代化后端
+- 📱 响应式前端设计
+- 🏷️ 产品分类管理
+- 🖼️ 产品图片展示
+- 📄 产品详情查看
+- 🔍 产品筛选功能
+- 📊 数据导入工具
+
+## 产品类型
+
+### 1. 超级电容器
+- 3.0V 100F
+- 3.0V 1F
+- 3.0V 3000F
+- 2.7V 350F
+- 2.7V 480F
+- 3.8V 750F
+- 3.8V 37000F
+- 16V 500F
+- 48V 165F
+- 54V 165F
+- 85V 20.6F
+- 160V 6F
+
+### 2. 连接器
+- 50A 连接器
+- 100A 连接器
+- 150A 连接器
+- 200A CW 连接器
+- 200A DW 连接器
+- 300A 连接器
+- 启动连接器
+
+### 3. 连接线
+- 卡车电池连接线（2P、3P、4P等规格）
+
+## 技术栈
+
+- **后端**: Go + PocketBase
+- **前端**: HTML5 + CSS3 + JavaScript + Bootstrap 5
+- **数据库**: SQLite (PocketBase内置)
+- **文件存储**: 本地文件系统
+
+## 快速开始
+
+### 环境要求
+
+- Go 1.21+
+- 现代浏览器
+
+### 安装和运行
+
+1. **克隆或下载项目**
+   ```bash
+   cd /Users/leven/space/power/网站
+   ```
+
+2. **运行启动脚本**
+   ```bash
+   ./start.sh
+   ```
+
+   或者手动执行以下步骤：
+
+   ```bash
+   # 初始化Go模块
+   go mod tidy
+   
+   # 构建应用
+   go build -o product-website .
+   
+   # 启动PocketBase服务器
+   ./pocketbase serve --http=127.0.0.1:8090 &
+   
+   # 导入产品数据
+   ./product-website import
+   ```
+
+3. **访问网站**
+   - 产品展示网站: http://localhost:8090
+   - 管理后台: http://localhost:8090/_/
+
+## 项目结构
+
+```
+网站/
+├── main.go                 # 主程序入口
+├── data_importer.go        # 数据导入逻辑
+├── import.go              # 导入命令设置
+├── go.mod                 # Go模块文件
+├── start.sh               # 启动脚本
+├── README.md              # 项目说明
+└── public/                # 前端静态文件
+    ├── index.html         # 主页面
+    └── app.js            # 前端JavaScript
+```
+
+## 数据导入
+
+系统会自动扫描以下文件夹并导入产品数据：
+
+- `独立站上架产品详情/` - 超级电容器产品
+- `钜恒产品英文网站资料/` - 连接器产品
+- `钜恒产品英文网站资料/卡车电池连接线/` - 连接线产品
+
+### 手动导入数据
+
+```bash
+./product-website import
+```
+
+## 管理后台
+
+访问 http://localhost:8090/_/ 可以进入PocketBase管理后台，在这里可以：
+
+- 查看和管理产品数据
+- 上传和管理文件
+- 配置API设置
+- 管理用户权限
+
+## 自定义配置
+
+### 修改端口
+
+在 `main.go` 中修改启动端口：
+
+```go
+if err := app.Start(); err != nil {
+    log.Fatal(err)
+}
+```
+
+### 添加新产品类型
+
+1. 在 `data_importer.go` 中添加新的导入函数
+2. 在 `main.go` 中添加新的分类
+3. 在前端 `app.js` 中添加新的分类按钮
+
+## 部署
+
+### 本地部署
+
+1. 确保所有依赖已安装
+2. 运行 `./start.sh`
+3. 访问 http://localhost:8090
+
+### 生产环境部署
+
+1. 构建生产版本：
+   ```bash
+   go build -ldflags="-s -w" -o product-website .
+   ```
+
+2. 使用反向代理（如Nginx）：
+   ```nginx
+   server {
+       listen 80;
+       server_name your-domain.com;
+       
+       location / {
+           proxy_pass http://127.0.0.1:8090;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+       }
+   }
+   ```
+
+## 故障排除
+
+### 常见问题
+
+1. **端口被占用**
+   - 修改 `start.sh` 中的端口号
+   - 或使用 `lsof -ti:8090 | xargs kill -9` 杀死占用进程
+
+2. **图片无法显示**
+   - 检查图片文件路径是否正确
+   - 确保图片文件存在且可读
+
+3. **数据导入失败**
+   - 检查产品文件夹是否存在
+   - 查看控制台错误信息
+
+## 开发
+
+### 添加新功能
+
+1. 修改后端：编辑Go文件
+2. 修改前端：编辑 `public/` 目录下的文件
+3. 重新构建：`go build -o product-website .`
+
+### 调试
+
+启用详细日志：
+
+```bash
+./product-website serve --debug
+```
+
+## 许可证
+
+本项目仅供内部使用。
+
+## 联系方式
+
+如有问题，请联系开发团队。
+

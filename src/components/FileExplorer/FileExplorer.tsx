@@ -11,6 +11,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useAppStore } from '@/stores';
+import { createFile as apiCreateFile, createFolder as apiCreateFolder } from '@/api/fs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,71 +30,33 @@ import { FileTree } from './FileTree';
 import { Input } from '../ui/input';
 
 export function FileExplorer() {
-  const {
-    searchQuery,
-    setSearchQuery,
-    createFileInFolder,
-    createFolder,
-    addNote,
-    syncFileTreeWithNotes
-  } = useAppStore();
+  const { searchQuery, setSearchQuery } = useAppStore();
   
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   // 创建新文件
-  const createNewFile = useCallback((type: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
-    const id = `note-${Date.now()}`;
-    let title = '新文件';
+  const createNewFile = useCallback(async (type: 'markdown' | 'database' | 'canvas' | 'html' | 'code') => {
+    let fileName = '新文件.md';
     let content = '';
-    
     switch (type) {
-      case 'markdown':
-        title = '新笔记';
-        content = '# 新笔记\n\n开始编辑这个笔记...';
-        break;
-      case 'database':
-        title = '新数据库';
-        content = JSON.stringify({ columns: ['ID', '名称', '类型'], rows: [] }, null, 2);
-        break;
-      case 'canvas':
-        title = '新画板';
-        content = '';
-        break;
-      case 'html':
-        title = '新页面';
-        content = '<!DOCTYPE html>\n<html>\n<head>\n    <title>Document</title>\n</head>\n<body>\n    <h1>Hello World!</h1>\n</body>\n</html>';
-        break;
-      case 'code':
-        title = '新代码';
-        content = '// JavaScript 代码\nconsole.log("Hello World!");';
-        break;
+      case 'markdown': fileName = '新笔记.md'; content = '# 新笔记\n\n开始编辑这个笔记...'; break;
+      case 'database': fileName = '新数据库.db'; content = JSON.stringify({ columns: ['ID', '名称', '类型'], rows: [] }, null, 2); break;
+      case 'canvas': fileName = '新画板.canvas'; content = ''; break;
+      case 'html': fileName = '新页面.html'; content = '<!DOCTYPE html>\n<html>\n<head>\n    <title>Document</title>\n</head>\n<body>\n    <h1>Hello World!</h1>\n</body>\n</html>'; break;
+      case 'code': fileName = '新代码.js'; content = '// JavaScript 代码\nconsole.log("Hello World!");'; break;
     }
-    
-    // 添加笔记
-    addNote({
-      id,
-      title,
-      content,
-      links: [],
-      backlinks: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      fileType: type,
-      folder: '/workspace/笔记'
-    });
-    
-    // 同步文件树
-    syncFileTreeWithNotes();
-    
-    // 创建文件节点
-    createFileInFolder('/workspace/笔记', title, type);
-  }, [addNote, createFileInFolder, syncFileTreeWithNotes]);
+    const parent = '/workspace/笔记';
+    const path = `${parent}/${fileName}`.replace(/\/+/g, '/');
+    await apiCreateFile(path, content);
+  }, []);
 
   // 创建新文件夹
-  const createNewFolder = useCallback(() => {
+  const createNewFolder = useCallback(async () => {
     const folderName = `新文件夹-${Date.now()}`;
-    createFolder('/workspace/笔记', folderName);
-  }, [createFolder]);
+    const parent = '/workspace/笔记';
+    const path = `${parent}/${folderName}`.replace(/\/+/g, '/');
+    await apiCreateFolder(path);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">

@@ -1,50 +1,62 @@
-import React, { useMemo } from 'react'
-import { Hash, FileText } from 'lucide-react'
+import React, { useEffect, useState, useCallback } from 'react'
+import { Hash, FileText, RefreshCw } from 'lucide-react'
 import { useAppStore } from '../../stores'
+import { listTags, filesForTag, type TagCount, type TagFileRef } from '@/api/tags'
+import { connectWS, addFsListener } from '@/lib/ws'
 
 export function TagsPanel() {
-  const { notes, setLeftPanel, openNoteInTabWithTitle } = useAppStore()
+  const { selectFileInEditor } = useAppStore()
+  const [tags, setTags] = useState<TagCount[]>([])
+  const [expandedTag, setExpandedTag] = useState<string | null>(null)
+  const [tagFiles, setTagFiles] = useState<Record<string, TagFileRef[]>>({})
+  const [loading, setLoading] = useState(false)
 
-  // 从笔记中提取标签
-  const tags = useMemo(() => {
-    const tagMap = new Map<string, string[]>()
+  const loadTags = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await listTags()
+      setTags(data)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-    Object.values(notes).forEach(note => {
-      // 从内容中提取 #标签
-      const tagMatches = note.content.match(/#\w+/g)
-      if (tagMatches) {
-        tagMatches.forEach(tag => {
-          const tagName = tag.substring(1) // 移除 # 号
-          if (!tagMap.has(tagName)) {
-            tagMap.set(tagName, [])
-          }
-          tagMap.get(tagName)!.push(note.id)
-        })
-      }
+  useEffect(() => {
+    connectWS()
+    loadTags()
+    const off = addFsListener(() => {
+      // 文件系统变化后稍微防抖刷新标签
+      const t = setTimeout(loadTags, 300)
+      return () => clearTimeout(t)
     })
+    return () => off()
+  }, [loadTags])
 
-    // 转换为数组并排序
-    return Array.from(tagMap.entries())
-      .map(([name, noteIds]) => ({
-        name,
-        count: noteIds.length,
-        noteIds: [...new Set(noteIds)] // 去重
-      }))
-      .sort((a, b) => b.count - a.count)
-  }, [notes])
-
-  const handleTagClick = (_tagName: string) => {
-    // 切换到搜索面板并搜索该标签
-    setLeftPanel('search')
+  const toggleExpand = async (name: string) => {
+    if (expandedTag === name) {
+      setExpandedTag(null)
+      return
+    }
+    setExpandedTag(name)
+    if (!tagFiles[name]) {
+      const files = await filesForTag(name)
+      setTagFiles((prev) => ({ ...prev, [name]: files }))
+    }
   }
 
-  const handleNoteClick = (noteId: string) => {
-    openNoteInTabWithTitle(noteId)
+  const handleNoteClick = (filePath: string) => {
+    selectFileInEditor(filePath)
   }
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto scrollbar-thin">
+        <div className="flex items-center justify-between px-2 py-1">
+          <span className="text-xs text-muted-foreground">标签</span>
+          <button className="p-1 rounded hover:bg-muted" onClick={loadTags} title="刷新标签">
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
         {tags.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-light-text-secondary dark:text-dark-text-secondary">
             <div className="text-center">
@@ -61,9 +73,10 @@ export function TagsPanel() {
                   key={tag.name}
                   name={tag.name}
                   count={tag.count}
-                  noteIds={tag.noteIds}
-                  onTagClick={handleTagClick}
-                  onNoteClick={handleNoteClick}
+                  files={tagFiles[tag.name] || []}
+                  expanded={expandedTag === tag.name}
+                  onToggle={() => toggleExpand(tag.name)}
+                  onFileClick={handleNoteClick}
                 />
               ))}
             </div>
@@ -77,23 +90,18 @@ export function TagsPanel() {
 interface TagItemProps {
   name: string
   count: number
-  noteIds: string[]
-  onTagClick: (tagName: string) => void
-  onNoteClick: (noteId: string) => void
+  files: TagFileRef[]
+  expanded: boolean
+  onToggle: () => void
+  onFileClick: (filePath: string) => void
 }
 
-function TagItem({ name, count, noteIds, onTagClick: _, onNoteClick }: TagItemProps) {
-  const { notes } = useAppStore()
-  const [isExpanded, setIsExpanded] = React.useState(false)
-
-  const notesList = noteIds.map(id => notes[id]).filter(Boolean)
-
+function TagItem({ name, count, files, expanded, onToggle, onFileClick }: TagItemProps) {
   return (
     <div className="border border-light-border dark:border-dark-border rounded-lg p-2">
-      {/* 标签头部 */}
       <div
         className="flex items-center justify-between cursor-pointer hover:bg-light-hover dark:hover:bg-dark-hover p-1 rounded transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={onToggle}
       >
         <div className="flex items-center">
           <Hash size={14} className="mr-2 text-light-accent dark:text-dark-accent" />
@@ -106,19 +114,19 @@ function TagItem({ name, count, noteIds, onTagClick: _, onNoteClick }: TagItemPr
         </span>
       </div>
 
-      {/* 展开的笔记列表 */}
-      {isExpanded && (
+      {expanded && (
         <div className="mt-2 ml-4 space-y-1">
-          {notesList.map(note => (
+          {files.map(file => (
             <div
-              key={note.id}
+              key={file.path}
               className="flex items-center p-1 rounded cursor-pointer hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
-              onClick={() => onNoteClick(note.id)}
+              onClick={() => onFileClick(file.path)}
             >
               <FileText size={12} className="mr-2 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0" />
               <span className="text-xs text-light-text dark:text-dark-text truncate">
-                {note.title}
+                {file.path}
               </span>
+              <span className="ml-auto text-[10px] text-muted-foreground">{file.count}</span>
             </div>
           ))}
         </div>

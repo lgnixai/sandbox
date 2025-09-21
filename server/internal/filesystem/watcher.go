@@ -5,6 +5,7 @@ import (
     "path/filepath"
 
     "github.com/fsnotify/fsnotify"
+    "obsidianfs/internal/tags"
     "obsidianfs/internal/ws"
 )
 
@@ -12,14 +13,15 @@ type Watcher struct {
     root    string
     watcher *fsnotify.Watcher
     hub     *ws.Hub
+    indexer *tags.Indexer
 }
 
-func NewWatcher(root string, hub *ws.Hub) (*Watcher, error) {
+func NewWatcher(root string, hub *ws.Hub, indexer *tags.Indexer) (*Watcher, error) {
     w, err := fsnotify.NewWatcher()
     if err != nil {
         return nil, err
     }
-    return &Watcher{root: root, watcher: w, hub: hub}, nil
+    return &Watcher{root: root, watcher: w, hub: hub, indexer: indexer}, nil
 }
 
 func (w *Watcher) Run() {
@@ -38,6 +40,10 @@ func (w *Watcher) Run() {
             if evt.Op&fsnotify.Remove == fsnotify.Remove { kind = "deleted" }
             if evt.Op&fsnotify.Rename == fsnotify.Rename { kind = "renamed" }
             w.hub.Broadcast(ws.Event{Type: "fs", Action: kind, Path: rel})
+            if w.indexer != nil {
+                // events provide absolute path in evt.Name
+                w.indexer.OnFsEvent(kind, evt.Name)
+            }
             // Add new directory watches
             if evt.Op&fsnotify.Create == fsnotify.Create {
                 _ = w.watcher.Add(evt.Name)

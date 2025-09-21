@@ -13,6 +13,7 @@ import (
 
 	"obsidianfs/internal/api"
 	"obsidianfs/internal/filesystem"
+	"obsidianfs/internal/tags"
 	"obsidianfs/internal/ws"
 )
 
@@ -33,11 +34,17 @@ func main() {
 		log.Fatalf("failed to init filesystem service: %v", err)
 	}
 
+	// Initialize tag indexer and build initial index
+	indexer := tags.NewIndexer(root)
+	if err := indexer.ReindexAll(); err != nil {
+		log.Printf("tag indexer initial build failed: %v", err)
+	}
+
 	hub := ws.NewHub()
 	go hub.Run()
 
 	// Start watcher for external changes
-	watcher, err := filesystem.NewWatcher(root, hub)
+	watcher, err := filesystem.NewWatcher(root, hub, indexer)
 	if err != nil {
 		log.Printf("fs watcher disabled: %v", err)
 	} else {
@@ -60,7 +67,7 @@ func main() {
 	r.GET("/api/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) })
 
 	// API routes
-	api.RegisterRoutes(r.Group("/api"), fsService, hub)
+	api.RegisterRoutes(r.Group("/api"), fsService, hub, indexer, root)
 
 	// WebSocket endpoint
 	r.GET("/ws", func(c *gin.Context) {
