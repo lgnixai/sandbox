@@ -65,13 +65,20 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   
   // 防抖定时器引用
   const refreshTimeoutRef = useRef<number | null>(null);
+  // 用于避免循环依赖的 expandedFolders 引用
+  const expandedFoldersRef = useRef<Set<string>>(new Set());
 
   // 从 store 中获取需要的函数
   const { selectNode, openNoteInTabWithTitle } = useAppStore();
 
+  // 同步 expandedFolders 状态到 ref
+  useEffect(() => {
+    expandedFoldersRef.current = expandedFolders;
+  }, [expandedFolders]);
+
   const toId = useCallback((p: string) => p, []);
 
-  const buildFromFs = useCallback((node: FsNode): { map: Record<string, FileItem>; roots: string[] } => {
+  const buildFromFs = useCallback((node: FsNode, currentExpandedFolders: Set<string>): { map: Record<string, FileItem>; roots: string[] } => {
     const map: Record<string, FileItem> = {};
     const roots: string[] = [];
 
@@ -93,7 +100,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
         path: n.path,
         parentId,
         children: n.type === 'folder' ? [] : undefined,
-        isExpanded: n.type === 'folder' ? (n.path === '/' ? true : expandedFolders.has(id)) : undefined,
+        isExpanded: n.type === 'folder' ? (n.path === '/' ? true : currentExpandedFolders.has(id)) : undefined,
       };
       map[id] = item;
       if (!parentId) {
@@ -115,14 +122,13 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   const loadTree = useCallback(async () => {
     try {
       const data = await getTree('/');
-      const { map, roots } = buildFromFs(data);
+      const { map, roots } = buildFromFs(data, expandedFoldersRef.current);
       setFiles(map);
       setRootItems(roots);
-      // 移除 onTreeChange 调用，避免循环
     } catch (error) {
       console.error('Failed to load tree:', error);
     }
-  }, [buildFromFs, expandedFolders]);
+  }, [buildFromFs]);
 
   // 防抖刷新函数 - 避免频繁的文件系统事件触发过多 API 调用
   const debouncedRefresh = useCallback(() => {
@@ -130,6 +136,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
+      // 保存当前展开状态，在刷新后恢复
       loadTree();
     }, 300); // 300ms 防抖
   }, [loadTree]);
@@ -226,6 +233,12 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       }
     }
     const newPath = `${parentPath}/${defaultName}`.replace(/\/\/+/g, '/');
+    
+    // 确保父文件夹保持展开状态
+    if (parentId) {
+      setExpandedFolders(prev => new Set([...prev, parentId]));
+    }
+    
     if (type === 'folder') {
       await apiCreateFolder(newPath);
     } else {
@@ -260,6 +273,10 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
     const parentPath = item.parentId ? files[item.parentId!].path : '';
     const newPath = `${parentPath}/${newName}`.replace(/\/\/+/g, '/');
     if (newPath !== item.path) {
+      // 确保父文件夹保持展开状态
+      if (item.parentId) {
+        setExpandedFolders(prev => new Set([...prev, item.parentId!]));
+      }
       await apiMovePath(item.path, newPath);
       await loadTree();
     }
@@ -313,6 +330,8 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       }
 
       try {
+        // 确保目标文件夹保持展开状态
+        setExpandedFolders(prev => new Set([...prev, targetItem.id]));
         await apiMovePath(draggedItem.path, newPath);
         await loadTree();
       } catch (error) {
