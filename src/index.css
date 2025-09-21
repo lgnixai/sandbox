@@ -41,7 +41,20 @@
     --tab-inactive: #f7f7f8;
     --tab-hover: #f0f1f2;
     --tab-border: #e1e4e8;
+    --tab-bar-background: #f6f8fa;
     --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.08);
+    
+    /* File tree colors */
+    --file-default: #2e3338;
+    --file-hover: #000000;
+    --file-selected: #7f6df2;
+    --folder-icon: #8b8b8b;
+    --background-hover: rgba(0,0,0,0.05);
+    --background-selected: rgba(127,109,242,0.1);
+    
+    /* Interactive accent */
+    --interactive-accent: hsl(254, 80%, 68%);
+    --interactive-accent-hover: hsl(254, 80%, 73%);
 
     /* Split gutter defaults for light */
     --gutter-color: #e5e7eb;
@@ -79,7 +92,20 @@
     --tab-inactive: #272727;
     --tab-hover: #303030;
     --tab-border: #3e3e42;
+    --tab-bar-background: #252526;
     --shadow-dropdown: 0 8px 32px rgba(0,0,0,0.35);
+    
+    /* File tree colors */
+    --file-default: #dcddde;
+    --file-hover: #ffffff;
+    --file-selected: #7f6df2;
+    --folder-icon: #999999;
+    --background-hover: rgba(255,255,255,0.08);
+    --background-selected: rgba(127,109,242,0.2);
+    
+    /* Interactive accent */
+    --interactive-accent: hsl(254, 80%, 68%);
+    --interactive-accent-hover: hsl(254, 80%, 73%);
 
     --gutter-color: #374151;
     --gutter-hover-color: #4b5563;
@@ -158,6 +184,8 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
       sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow: hidden;

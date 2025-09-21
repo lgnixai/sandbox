@@ -37,10 +37,25 @@ export default {
         'tab-active': 'var(--tab-active)',
         'tab-inactive': 'var(--tab-inactive)',
         'tab-hover': 'var(--tab-hover)',
-        'tab-border': 'var(--tab-border)'
+        'tab-border': 'var(--tab-border)',
+        'tab-bar-background': 'var(--tab-bar-background)',
+        
+        // File tree colors
+        'file-default': 'var(--file-default)',
+        'file-hover': 'var(--file-hover)',
+        'file-selected': 'var(--file-selected)',
+        'folder-icon': 'var(--folder-icon)',
+        'background-hover': 'var(--background-hover)',
+        'background-selected': 'var(--background-selected)',
+        
+        // Interactive accent
+        'interactive-accent': 'var(--interactive-accent)',
+        'interactive-accent-hover': 'var(--interactive-accent-hover)'
       },
       fontFamily: {
-        'mono': ['Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', 'monospace'],
+        'sans': ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        'mono': ['JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', 'monospace'],
+        'editor': ['Inter', '-apple-system', 'sans-serif']
       },
       fontSize: {
         '2xs': '0.625rem',
