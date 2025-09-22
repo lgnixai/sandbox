@@ -25,21 +25,23 @@ export function EnhancedMainEditor() {
   // 监听文件树选中状态变化
   useEffect(() => {
     if (selectedNodeId && notes[selectedNodeId]) {
+      console.log('File tree selection changed:', selectedNodeId);
       // 在当前活跃面板打开笔记
       openNoteInTab(selectedNodeId, activePaneId || undefined);
     }
   }, [selectedNodeId, openNoteInTab, activePaneId, notes]);
 
-  // 监听标签页激活状态变化，同步到文件树
-  useEffect(() => {
-    const activePane = panes.find(p => p.id === activePaneId);
-    if (activePane?.activeTabId) {
-      const activeTab = activePane.tabs.find(t => t.id === activePane.activeTabId);
-      if (activeTab) {
-        selectNode(activeTab.noteId);
-      }
-    }
-  }, [activePaneId, panes, selectNode]);
+  // 监听标签页激活状态变化，同步到文件树（暂时禁用以避免循环）
+  // useEffect(() => {
+  //   const activePane = panes.find(p => p.id === activePaneId);
+  //   if (activePane?.activeTabId) {
+  //     const activeTab = activePane.tabs.find(t => t.id === activePane.activeTabId);
+  //     if (activeTab) {
+  //       console.log('Tab activation changed:', activeTab.noteId);
+  //       selectNode(activeTab.noteId);
+  //     }
+  //   }
+  // }, [activePaneId, panes, selectNode]);
 
   // 处理标签页关闭
   const handleCloseTab = useCallback((paneId: string) => (tabId: string) => {
@@ -48,16 +50,18 @@ export function EnhancedMainEditor() {
 
   // 处理标签页激活
   const handleActivateTab = useCallback((paneId: string) => (tabId: string) => {
-    setActiveTab(tabId, paneId);
+    console.log('Activating tab:', tabId, 'in pane:', paneId);
+    setActiveTab(paneId, tabId); // 修复参数顺序：先paneId，后tabId
     setActivePane(paneId);
     
-    // 同步选中状态到文件树
-    const pane = panes.find(p => p.id === paneId);
-    const tab = pane?.tabs.find(t => t.id === tabId);
-    if (tab) {
-      selectNode(tab.noteId);
-    }
-  }, [setActiveTab, setActivePane, panes, selectNode]);
+    // 暂时不在这里同步到文件树，避免循环调用
+    // const pane = panes.find(p => p.id === paneId);
+    // const tab = pane?.tabs.find(t => t.id === tabId);
+    // if (tab) {
+    //   console.log('Syncing to file tree:', tab.noteId);
+    //   selectNode(tab.noteId);
+    // }
+  }, [setActiveTab, setActivePane]);
 
   // 处理添加新标签页
   const handleAddTab = useCallback((paneId: string) => () => {
@@ -105,14 +109,25 @@ export function EnhancedMainEditor() {
   const renderPane = (pane: typeof panes[0]) => {
     const activeTab = pane.tabs.find(tab => tab.id === pane.activeTabId);
     const activeNote = activeTab ? notes[activeTab.noteId] : null;
+    
+    console.log('Rendering pane:', pane.id, {
+      activeTabId: pane.activeTabId,
+      activeTab: activeTab?.noteId,
+      activeNote: activeNote?.title,
+      totalTabs: pane.tabs.length
+    });
 
     return (
       <div className="h-full flex flex-col bg-background">
         <TabBar
-          tabs={pane.tabs.map(tab => ({
-            ...tab,
-            isActive: tab.id === pane.activeTabId
-          }))}
+          tabs={pane.tabs.map(tab => {
+            const note = notes[tab.noteId];
+            return {
+              ...tab,
+              title: note?.title || tab.title,
+              isActive: tab.id === pane.activeTabId
+            };
+          })}
           onCloseTab={handleCloseTab(pane.id)}
           onActivateTab={handleActivateTab(pane.id)}
           onAddTab={handleAddTab(pane.id)}
