@@ -59,20 +59,18 @@ export function FileExplorer() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 工具栏 */}
-      <div className="flex items-center justify-between p-2 border-b border-light-border dark:border-dark-border">
-        <span className="text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary">
-          文件
-        </span>
-        <div className="flex items-center space-x-1">
+    <div className="flex flex-col h-full bg-white">
+      {/* 单行工具栏 - 参考图片风格 */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+        
+        <div className="flex items-center space-x-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="p-1 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
                 title="新建"
               >
-                <Plus size={14} />
+                <Plus size={16} className="text-gray-600" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -103,33 +101,45 @@ export function FileExplorer() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
           <button
-            className="p-1 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
             title="搜索"
             onClick={() => setIsSearchVisible(!isSearchVisible)}
           >
-            <Search size={14} />
+            <Search size={16} className="text-gray-600" />
           </button>
-          
           <button
-            className="p-1 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            title="新建文件"
+            onClick={() => createNewFile('markdown')}
+          >
+            <FileText size={16} className="text-gray-600" />
+          </button>
+          <button
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            title="新建文件夹"
+            onClick={createNewFolder}
+          >
+            <FolderPlus size={16} className="text-gray-600" />
+          </button>
+          <button
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
             title="更多选项"
           >
-            <MoreHorizontal size={14} />
+            <MoreHorizontal size={16} className="text-gray-600" />
           </button>
         </div>
       </div>
 
-      {/* 搜索框 */}
+      {/* 搜索框 - 参考图片风格 */}
       {isSearchVisible && (
-        <div className="p-2 border-b border-light-border dark:border-dark-border">
+        <div className="px-3 py-2 border-b border-gray-200">
           <Input
             type="text"
             placeholder="搜索文件..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 text-xs"
+            className="h-8 text-sm border-gray-300 focus:border-gray-400 focus:ring-gray-400"
           />
         </div>
       )}
@@ -137,8 +147,8 @@ export function FileExplorer() {
       {/* 文件树 */}
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="flex-1 overflow-hidden">
-            <FileTree className="h-full" />
+          <div className="flex-1 overflow-hidden bg-white">
+            <FileTree className="h-full px-1 py-2" />
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>

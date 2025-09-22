@@ -44,13 +44,13 @@
     --tab-bar-background: #f6f8fa;
     --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.08);
     
-    /* File tree colors */
-    --file-default: #2e3338;
+    /* File tree colors - 参考图片风格 */
+    --file-default: #4a4a4a;
     --file-hover: #000000;
-    --file-selected: #7f6df2;
+    --file-selected: #4a4a4a;
     --folder-icon: #8b8b8b;
-    --background-hover: rgba(0,0,0,0.05);
-    --background-selected: rgba(127,109,242,0.1);
+    --background-hover: rgba(0,0,0,0.04);
+    --background-selected: rgba(0,0,0,0.08);
     
     /* Interactive accent */
     --interactive-accent: hsl(254, 80%, 68%);
@@ -95,13 +95,13 @@
     --tab-bar-background: #252526;
     --shadow-dropdown: 0 8px 32px rgba(0,0,0,0.35);
     
-    /* File tree colors */
+    /* File tree colors - 参考图片风格 */
     --file-default: #dcddde;
     --file-hover: #ffffff;
-    --file-selected: #7f6df2;
+    --file-selected: #dcddde;
     --folder-icon: #999999;
-    --background-hover: rgba(255,255,255,0.08);
-    --background-selected: rgba(127,109,242,0.2);
+    --background-hover: rgba(255,255,255,0.06);
+    --background-selected: rgba(255,255,255,0.12);
     
     /* Interactive accent */
     --interactive-accent: hsl(254, 80%, 68%);

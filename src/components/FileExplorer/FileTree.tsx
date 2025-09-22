@@ -261,6 +261,10 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       addNote(tempNote);
       openNoteInTabWithTitle(newPath);
     }
+    
+    // 在重新加载文件树之前，确保展开状态被保存
+    expandedFoldersRef.current = expandedFolders;
+    
     await loadTree();
     setEditingId(toId(newPath));
     setNewItemName(defaultName);
@@ -277,6 +281,10 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       if (item.parentId) {
         setExpandedFolders(prev => new Set([...prev, item.parentId!]));
       }
+      
+      // 在重新加载文件树之前，确保展开状态被保存
+      expandedFoldersRef.current = expandedFolders;
+      
       await apiMovePath(item.path, newPath);
       await loadTree();
     }
@@ -332,6 +340,10 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       try {
         // 确保目标文件夹保持展开状态
         setExpandedFolders(prev => new Set([...prev, targetItem.id]));
+        
+        // 在重新加载文件树之前，确保展开状态被保存
+        expandedFoldersRef.current = expandedFolders;
+        
         await apiMovePath(draggedItem.path, newPath);
         await loadTree();
       } catch (error) {
@@ -434,11 +446,11 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
       <SidebarMenuItem key={item.id}>
         <div
           className={cn(
-            "flex items-center gap-1 px-2 py-0.5 cursor-pointer group relative",
+            "flex items-center gap-2 px-3 py-1.5 cursor-pointer group relative",
             "text-[13px] transition-all duration-150",
-            "h-[24px]", // Obsidian specification: 24px row height
+            "h-[28px] rounded-md", // 参考图片风格：更高的行高和圆角
             isSelected 
-              ? "bg-file-selected/10 text-file-selected font-medium" 
+              ? "bg-background-selected text-file-selected" 
               : "text-file-default hover:bg-background-hover hover:text-file-hover",
             isDragOver && "bg-blue-500/20 ring-1 ring-blue-500/50",
             draggedItem?.id === item.id && "opacity-50"
@@ -453,16 +465,13 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
           onDrop={(e) => handleDrop(e, item)}
           onDragEnd={handleDragEnd}
         >
-          {/* Selection indicator bar */}
-          {isSelected && (
-            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-file-selected transition-all duration-150" />
-          )}
+          {/* 参考图片风格：移除左侧选中指示条 */}
 
           {item.type === 'folder' && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-3 w-3 p-0 hover:bg-transparent shrink-0"
+              className="h-4 w-4 p-0 hover:bg-transparent shrink-0 -ml-0.5"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleExpand(item.id);
@@ -483,7 +492,9 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
               <Folder className="h-4 w-4 text-folder-icon shrink-0" />
             )
           ) : (
-            getFileIcon(item.fileType)
+            <div className="shrink-0">
+              {getFileIcon(item.fileType)}
+            </div>
           )}
 
           {isEditing ? (
@@ -503,17 +514,17 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
               autoFocus
             />
           ) : (
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="truncate text-inherit font-normal leading-tight">
                 {item.name}
               </span>
               {typeLabel && (
-                <span className="px-1.5 py-0.5 text-[9px] font-medium bg-muted/50 text-muted-foreground rounded-sm uppercase tracking-wide shrink-0">
+                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 rounded-sm uppercase tracking-wide shrink-0">
                   {typeLabel}
                 </span>
               )}
               {item.type === 'file' && (item as any).unlinkedMentions > 0 && (
-                <span className="ml-auto mr-1 px-1.5 py-0.5 text-[11px] font-medium bg-muted/50 text-muted-foreground rounded-full min-w-[18px] h-[18px] flex items-center justify-center hover:bg-interactive-accent hover:text-white transition-all duration-150 hover:scale-110">
+                <span className="ml-auto mr-1 px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 rounded-full min-w-[18px] h-[18px] flex items-center justify-center hover:bg-gray-200 transition-all duration-150">
                   {(item as any).unlinkedMentions}
                 </span>
               )}
@@ -565,6 +576,9 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
                 onClick={async () => {
                   if (confirm(`确定要删除 "${item.name}" ${item.type === 'folder' ? '文件夹及其所有内容' : '文件'}吗？`)) {
                     try {
+                      // 在重新加载文件树之前，确保展开状态被保存
+                      expandedFoldersRef.current = expandedFolders;
+                      
                       await apiDeletePath(item.path);
                       await loadTree();
                     } catch (error) {
@@ -595,7 +609,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
 
   return (
     <div className={cn("h-full flex flex-col bg-sidebar-background border-r border-sidebar-border", className)}>
-      <div className="flex items-center justify-between px-3 py-2 border-b border-sidebar-border bg-sidebar-background">
+      {/* <div className="flex items-center justify-between px-3 py-2 border-b border-sidebar-border bg-sidebar-background">
         <span className="text-xs font-medium text-sidebar-foreground tracking-wide">文件</span>
         <div className="flex gap-0.5">
           <Button
@@ -615,7 +629,7 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
             <FolderPlus className="h-3.5 w-3.5 text-sidebar-foreground/70" />
           </Button>
         </div>
-      </div>
+      </div> */}
       
       <div className="flex-1 overflow-y-auto py-1">
         <SidebarProvider>

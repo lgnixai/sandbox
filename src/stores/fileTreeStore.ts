@@ -1,49 +1,43 @@
+/**
+ * 重构后的文件树状态管理
+ * 提供简洁、高效的文件树状态管理
+ */
+
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { enableMapSet } from 'immer';
 
+// 启用 Immer 的 MapSet 插件
 enableMapSet();
 
-// 文件树节点类型
-export interface FileNode {
+export interface TreeNode {
   id: string;
   name: string;
-  type: 'file';
-  fileType?: 'markdown' | 'database' | 'canvas' | 'html' | 'code';
+  type: 'file' | 'folder';
   path: string;
-  parentPath: string;
-  content?: string;
-  unlinkedMentions?: number; // 未链接提及数
+  parentPath: string | null;
   isSelected?: boolean;
-  isDragging?: boolean;
-}
-
-export interface FolderNode {
-  id: string;
-  name: string;
-  type: 'folder';
-  path: string;
-  parentPath: string;
   isExpanded?: boolean;
-  isSelected?: boolean;
-  isDragOver?: boolean;
   childCount?: number;
+  unlinkedMentions?: number;
 }
 
-export type TreeNode = FileNode | FolderNode;
-
-// 拖拽数据类型
-export interface DragData {
-  node: TreeNode;
-  type: 'move' | 'link';
+export interface FileNode extends TreeNode {
+  type: 'file';
+  fileType: 'markdown' | 'database' | 'canvas' | 'html' | 'code';
+  content?: string;
 }
 
-// 文件树状态
+export interface FolderNode extends TreeNode {
+  type: 'folder';
+  childCount: number;
+}
+
 export interface FileTreeState {
-  // 文件和文件夹索引
+  // 节点索引
   nodes: Record<string, TreeNode>;
   
-  // 展开的文件夹集合
+  // 展开的文件夹集合（使用路径作为键）
   expandedFolders: Set<string>;
   
   // 选中的节点ID
@@ -56,12 +50,11 @@ export interface FileTreeState {
   // 重命名状态
   renamingNodeId: string | null;
   
-  // 文件搜索过滤
+  // 搜索状态
   searchQuery: string;
   filteredNodeIds: Set<string>;
 }
 
-// 文件树操作
 export interface FileTreeActions {
   // 节点操作
   addNode: (node: TreeNode) => void;
@@ -83,12 +76,10 @@ export interface FileTreeActions {
   startDrag: (node: TreeNode) => void;
   endDrag: () => void;
   setDragOver: (nodeId: string | null) => void;
-  handleDrop: (targetNodeId: string, dragData: DragData) => void;
   
   // 重命名操作
   startRename: (nodeId: string) => void;
   endRename: () => void;
-  commitRename: (nodeId: string, newName: string) => void;
   
   // 搜索操作
   setSearchQuery: (query: string) => void;
@@ -107,6 +98,10 @@ export interface FileTreeActions {
   getChildNodes: (parentPath: string) => TreeNode[];
   getAncestorPaths: (path: string) => string[];
   isPathVisible: (path: string) => boolean;
+  
+  // 状态管理
+  resetState: () => void;
+  setState: (state: Partial<FileTreeState>) => void;
 }
 
 export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
@@ -172,9 +167,6 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
       const node = state.nodes[nodeId];
       if (!node) return;
       
-      const oldParentPath = node.parentPath;
-      
-      // 更新节点路径
       const oldPath = node.path;
       const newPath = `${newParentPath}/${node.name}`;
       
@@ -197,45 +189,36 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
         };
         updateChildPaths(oldPath, newPath);
       }
-      
-      // 更新新旧父文件夹的子节点数
-      if (oldParentPath && state.nodes[oldParentPath]) {
-        const oldParent = state.nodes[oldParentPath] as FolderNode;
-        oldParent.childCount = Math.max(0, (oldParent.childCount || 0) - 1);
-      }
-      if (newParentPath && state.nodes[newParentPath]) {
-        const newParent = state.nodes[newParentPath] as FolderNode;
-        newParent.childCount = (newParent.childCount || 0) + 1;
-      }
     }),
 
     // 文件夹操作
     toggleFolder: (folderId) => set((state) => {
-      const folder = state.nodes[folderId] as FolderNode;
+      const folder = state.nodes[folderId];
       if (folder?.type === 'folder') {
+        const folderNode = folder as FolderNode;
         if (state.expandedFolders.has(folder.path)) {
           state.expandedFolders.delete(folder.path);
-          folder.isExpanded = false;
+          folderNode.isExpanded = false;
         } else {
           state.expandedFolders.add(folder.path);
-          folder.isExpanded = true;
+          folderNode.isExpanded = true;
         }
       }
     }),
 
     expandFolder: (folderId) => set((state) => {
-      const folder = state.nodes[folderId] as FolderNode;
+      const folder = state.nodes[folderId];
       if (folder?.type === 'folder') {
         state.expandedFolders.add(folder.path);
-        folder.isExpanded = true;
+        (folder as FolderNode).isExpanded = true;
       }
     }),
 
     collapseFolder: (folderId) => set((state) => {
-      const folder = state.nodes[folderId] as FolderNode;
+      const folder = state.nodes[folderId];
       if (folder?.type === 'folder') {
         state.expandedFolders.delete(folder.path);
-        folder.isExpanded = false;
+        (folder as FolderNode).isExpanded = false;
       }
     }),
 
@@ -288,52 +271,11 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
       }
       state.draggedNode = null;
       state.dragOverNodeId = null;
-      
-      // 清除所有拖拽悬停状态
-      Object.values(state.nodes).forEach(node => {
-        if (node.type === 'folder') {
-          (node as FolderNode).isDragOver = false;
-        }
-      });
     }),
 
     setDragOver: (nodeId) => set((state) => {
-      // 清除之前的拖拽悬停状态
-      if (state.dragOverNodeId && state.nodes[state.dragOverNodeId]) {
-        const prevNode = state.nodes[state.dragOverNodeId];
-        if (prevNode.type === 'folder') {
-          (prevNode as FolderNode).isDragOver = false;
-        }
-      }
-      
-      // 设置新的拖拽悬停状态
       state.dragOverNodeId = nodeId;
-      if (nodeId && state.nodes[nodeId]) {
-        const node = state.nodes[nodeId];
-        if (node.type === 'folder') {
-          (node as FolderNode).isDragOver = true;
-        }
-      }
     }),
-
-    handleDrop: (targetNodeId, dragData) => {
-      const state = get();
-      const targetNode = state.nodes[targetNodeId];
-      
-      if (!targetNode || !dragData.node) return;
-      
-      if (dragData.type === 'move') {
-        // 移动节点
-        if (targetNode.type === 'folder') {
-          state.moveNode(dragData.node.id, targetNode.path);
-        }
-      } else if (dragData.type === 'link') {
-        // 创建链接（在编辑器中处理）
-        console.log('Creating link from', dragData.node.name, 'to editor');
-      }
-      
-      state.endDrag();
-    },
 
     // 重命名操作
     startRename: (nodeId) => set((state) => {
@@ -344,43 +286,6 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
       state.renamingNodeId = null;
     }),
 
-    commitRename: (nodeId, newName) => set((state) => {
-      const node = state.nodes[nodeId];
-      if (!node || !newName.trim()) return;
-      
-      const oldName = node.name;
-      const oldPath = node.path;
-      
-      // 更新节点名称和路径
-      node.name = newName.trim();
-      node.path = `${node.parentPath}/${newName.trim()}`;
-      
-      // 如果是文件夹，更新所有子节点的路径
-      if (node.type === 'folder') {
-        const updateChildPaths = (oldParentPath: string, newParentPath: string) => {
-          Object.values(state.nodes).forEach(child => {
-            if (child.parentPath === oldParentPath) {
-              child.parentPath = newParentPath;
-              child.path = `${newParentPath}/${child.name}`;
-              
-              if (child.type === 'folder') {
-                updateChildPaths(oldParentPath + '/' + child.name, child.path);
-              }
-            }
-          });
-        };
-        updateChildPaths(oldPath, node.path);
-        
-        // 更新展开状态
-        if (state.expandedFolders.has(oldPath)) {
-          state.expandedFolders.delete(oldPath);
-          state.expandedFolders.add(node.path);
-        }
-      }
-      
-      state.renamingNodeId = null;
-    }),
-
     // 搜索操作
     setSearchQuery: (query) => set((state) => {
       state.searchQuery = query;
@@ -388,26 +293,16 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
     }),
 
     updateFilteredNodes: () => set((state) => {
-      state.filteredNodeIds.clear();
-      
-      if (!state.searchQuery.trim()) return;
-      
       const query = state.searchQuery.toLowerCase();
+      if (!query) {
+        state.filteredNodeIds.clear();
+        return;
+      }
+
+      state.filteredNodeIds.clear();
       Object.values(state.nodes).forEach(node => {
         if (node.name.toLowerCase().includes(query)) {
           state.filteredNodeIds.add(node.id);
-          
-          // 确保父文件夹也被包含
-          let parentPath = node.parentPath;
-          while (parentPath) {
-            const parentNode = Object.values(state.nodes).find(n => n.path === parentPath);
-            if (parentNode) {
-              state.filteredNodeIds.add(parentNode.id);
-              parentPath = parentNode.parentPath;
-            } else {
-              break;
-            }
-          }
         }
       });
     }),
@@ -420,7 +315,7 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
         name: fileName,
         type: 'file',
         fileType,
-        path: `${parentPath}/${fileName}`,
+        path: `${parentPath}/${fileName}`.replace(/\/\/+/g, '/'),
         parentPath,
         content: ''
       };
@@ -435,7 +330,7 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
         id: folderId,
         name: folderName,
         type: 'folder',
-        path: `${parentPath}/${folderName}`,
+        path: `${parentPath}/${folderName}`.replace(/\/\/+/g, '/'),
         parentPath,
         isExpanded: false,
         childCount: 0
@@ -446,7 +341,7 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
     },
 
     deleteFolder: (folderPath) => {
-      const folder = Object.values(get().nodes).find(n => n.path === folderPath && n.type === 'folder');
+      const folder = Object.values(get().nodes).find(node => node.path === folderPath);
       if (folder) {
         get().deleteNode(folder.id);
       }
@@ -503,6 +398,22 @@ export const useFileTreeStore = create<FileTreeState & FileTreeActions>()(
       
       // 检查所有祖先文件夹是否都展开
       return ancestors.every(ancestorPath => state.expandedFolders.has(ancestorPath));
-    }
+    },
+
+    // 状态管理
+    resetState: () => set((state) => {
+      state.nodes = {};
+      state.expandedFolders.clear();
+      state.selectedNodeId = null;
+      state.draggedNode = null;
+      state.dragOverNodeId = null;
+      state.renamingNodeId = null;
+      state.searchQuery = '';
+      state.filteredNodeIds.clear();
+    }),
+
+    setState: (newState) => set((state) => {
+      Object.assign(state, newState);
+    }),
   }))
 );

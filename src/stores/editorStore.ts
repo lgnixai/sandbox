@@ -5,6 +5,8 @@ export interface Tab {
   id: string;
   noteId: string;
   title: string;
+  isActive: boolean;
+  isPinned: boolean;
   isDirty: boolean;
 }
 
@@ -37,6 +39,7 @@ export interface EditorState {
 
 export interface EditorActions {
   // 标签页操作
+  addTab: (paneId: string, tab: Tab) => void;
   openNoteInTab: (noteId: string, paneId?: string) => void;
   closeTab: (tabId: string, paneId: string) => void;
   setActiveTab: (tabId: string, paneId: string) => void;
@@ -103,6 +106,14 @@ export const useEditorStore = create<EditorState & EditorActions>()(
         isDirty: false
       });
       targetPane.activeTabId = newTabId;
+    }),
+
+    addTab: (paneId, tab) => set((state) => {
+      const pane = state.panes.find(p => p.id === paneId);
+      if (pane) {
+        pane.tabs.push(tab);
+        pane.activeTabId = tab.id;
+      }
     }),
 
     closeTab: (tabId, paneId) => set((state) => {
