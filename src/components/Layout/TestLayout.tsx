@@ -73,16 +73,19 @@ export function TestLayout() {
   const layoutKey = `${leftSidebarVisible ? 'L' : ''}${rightSidebarVisible ? 'R' : ''}`;
 
   const renderMainContent = () => {
+    // 如果没有侧边栏需要显示，使用简单的flex布局
     if (!leftSidebarVisible && !rightSidebarVisible) {
       return (
         <div className="flex flex-1">
           <ActivityBar />
-          <EnhancedMainEditor />
+          <div className="flex-1">
+            <EnhancedMainEditor />
+          </div>
         </div>
       );
     }
 
-    // 使用单一的 Resizable 组件，通过 key 属性强制重新创建
+    // 使用Resizable组件处理有侧边栏的情况
     return (
       <div className="flex flex-1">
         <ActivityBar />
@@ -112,6 +115,7 @@ export function TestLayout() {
             <ResizablePanel 
               id="main-editor"
               order={2}
+              className="flex-1"
             >
               <EnhancedMainEditor />
             </ResizablePanel>
