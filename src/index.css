@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import enhanced animations */
+@import './styles/enhanced-animations.css';
+
 /* 导入 Obsidian 主题样式 */
 @import './styles/obsidian-theme.css';
 
