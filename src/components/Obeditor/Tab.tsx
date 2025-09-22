@@ -152,91 +152,75 @@ const Tab: React.FC<TabProps> = ({
       </button>
     </div>
   </ContextMenuTrigger>
-  
-  <ContextMenuContent className="w-48 bg-card border border-border shadow-dropdown z-50">
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('close')}
-            disabled={tab.isLocked}
-          >
-            关闭
-          </ContextMenuItem>
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('closeOthers')}
-          >
-            关闭其他标签页
-          </ContextMenuItem>
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('closeAll')}
-          >
-            全部关闭
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('duplicate')}
-          >
-            复制标签页
-          </ContextMenuItem>
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('rename')}
-          >
-            重命名
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('toggleLock')}
-          >
-            {tab.isLocked ? '解锁' : '锁定'}
-          </ContextMenuItem>
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('copyPath')}
-            disabled={!tab.filePath}
-          >
-            复制文件路径
-          </ContextMenuItem>
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('revealInExplorer')}
-          >
-            在资源管理器中显示
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('splitHorizontal')}
-          >
-            左右分屏
-          </ContextMenuItem>
-          <ContextMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('splitVertical')}
-          >
-            上下分屏
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-
-      {/* Close button */}
-      <button
-        className={cn(
-          "flex items-center justify-center w-5 h-5 mr-1",
-          "opacity-0 group-hover:opacity-100 hover:bg-nav-hover rounded",
-          "transition-opacity duration-150"
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose(tab.id);
-        }}
-      >
-        <X className="w-3 h-3 text-muted-foreground hover:text-foreground" />
-      </button>
-    </div>
+      
+      <ContextMenuContent className="w-48 bg-card border border-border shadow-dropdown z-50">
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('close')}
+          disabled={tab.isLocked}
+        >
+          关闭
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('closeOthers')}
+        >
+          关闭其他标签页
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('closeAll')}
+        >
+          全部关闭
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('duplicate')}
+        >
+          复制标签页
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('rename')}
+        >
+          重命名
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('toggleLock')}
+        >
+          {tab.isLocked ? '解锁' : '锁定'}
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('copyPath')}
+          disabled={!tab.filePath}
+        >
+          复制文件路径
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('revealInExplorer')}
+        >
+          在资源管理器中显示
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('splitHorizontal')}
+        >
+          左右分屏
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('splitVertical')}
+        >
+          上下分屏
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };
 
@@ -283,8 +267,8 @@ const TabBar: React.FC<TabBarProps> = ({
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Tabs with inline add button */}
+      <div className="flex flex-1 overflow-x-auto">
         {tabs.map((tab) => (
           <Tab
             key={tab.id}
@@ -302,13 +286,11 @@ const TabBar: React.FC<TabBarProps> = ({
             onRevealInExplorer={onRevealInExplorer}
           />
         ))}
-      </div>
-
-      {/* Add tab button */}
-      <div className="flex items-center px-2 border-l border-border">
+        
+        {/* Add tab button - positioned after last tab */}
         <button 
           onClick={onAddTab}
-          className="p-1 hover:bg-nav-hover rounded"
+          className="flex items-center justify-center w-8 h-8 hover:bg-nav-hover rounded transition-colors flex-shrink-0"
           title="新建标签页"
         > 
           <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
