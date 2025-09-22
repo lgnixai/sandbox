@@ -35,7 +35,15 @@ interface FileItem {
 }
 
 export function MainEditor() {
-  const { setEditorCallbacks, revealInExplorer, setLeftPanel } = useAppStore();
+  const { 
+    setEditorCallbacks, 
+    revealInExplorer, 
+    setLeftPanel,
+    // 添加双向同步需要的状态和方法
+    selectedNodeId,
+    selectNode,
+    notes
+  } = useAppStore();
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [files, setFiles] = useState<Record<string, FileItem>>({});
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -91,6 +99,49 @@ export function MainEditor() {
       console.warn('Failed to save panel tree:', error);
     }
   }, [panelTree]);
+
+  // 双向同步：监听文件树选中状态变化，同步到标签页
+  useEffect(() => {
+    if (selectedNodeId && notes[selectedNodeId]) {
+      // 在当前活跃标签页中打开笔记
+      const note = notes[selectedNodeId];
+      const fileItem: FileItem = {
+        id: selectedNodeId,
+        name: note.title,
+        type: 'file',
+        fileType: note.fileType,
+        path: selectedNodeId,
+        content: note.content
+      };
+      
+      // 使用 preview 模式打开，这样不会创建太多标签页
+      handleFileSelectWithMode(fileItem, 'preview');
+    }
+  }, [selectedNodeId, notes, handleFileSelectWithMode]);
+
+  // 双向同步：监听标签页激活状态变化，同步到文件树
+  useEffect(() => {
+    const getCurrentActiveTab = () => {
+      const findActiveTab = (node: PanelNode): ExtendedTabType | null => {
+        if (node.type === 'leaf') {
+          return node.tabs?.find(tab => tab.isActive) as ExtendedTabType || null;
+        } else if (node.children) {
+          for (const child of node.children) {
+            const activeTab = findActiveTab(child);
+            if (activeTab) return activeTab;
+          }
+        }
+        return null;
+      };
+      return findActiveTab(panelTree);
+    };
+
+    const activeTab = getCurrentActiveTab();
+    if (activeTab?.fileId && activeTab.fileId !== selectedNodeId) {
+      // 同步选中状态到文件树，但避免循环更新
+      selectNode(activeTab.fileId);
+    }
+  }, [panelTree, selectedNodeId, selectNode]);
 
   // Add file to recent list
   const addToRecentFiles = useCallback((fileId: string) => {
@@ -161,6 +212,12 @@ export function MainEditor() {
   const handleFileSelectWithMode = useCallback((file: FileItem, openMode: 'preview' | 'pinned') => {
     setSelectedFile(file);
     addToRecentFiles(file.id);
+    
+    // 更新files状态，确保文件内容可以被渲染
+    setFiles(prev => ({
+      ...prev,
+      [file.id]: file
+    }));
 
     const active = getCurrentActiveTab();
     const targetPanelId = active?.panelId || 'root';
@@ -615,7 +672,7 @@ export function MainEditor() {
     if (node.type === 'leaf') {
       if (node.tabs) {
         const activeTab = node.tabs.find(tab => tab.isActive) as ExtendedTabType | undefined;
-        const activeFile = activeTab?.fileId ? files[activeTab.fileId] || selectedFile : null;
+        const activeFile = activeTab?.fileId ? files[activeTab.fileId] || selectedFile : selectedFile;
         
         return (
           <div className="h-full flex flex-col">
