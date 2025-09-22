@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { TabBar, type TabType } from '../Obeditor/Tab';
-import Editor from '../Obeditor/Editor';
-import MarkdownEditor from '../Obeditor/MarkdownEditor';
-import DatabaseEditor from '../Obeditor/DatabaseEditor';
-import CanvasEditor from '../Obeditor/CanvasEditor';
-import HtmlEditor from '../Obeditor/HtmlEditor';
-import CodeEditor from '../Obeditor/CodeEditor';
-import CommandPalette from '../Obeditor/CommandPalette';
+import { TabBar, type TabType } from '../Editor/Tab';
+import Editor from '../Editor/Editor';
+import MarkdownEditor from '../Editor/MarkdownEditor';
+import DatabaseEditor from '../Editor/DatabaseEditor';
+import CanvasEditor from '../Editor/CanvasEditor';
+import HtmlEditor from '../Editor/HtmlEditor';
+import CodeEditor from '../Editor/CodeEditor';
+import CommandPalette from '../Editor/CommandPalette';
 import { useAppStore, type EditorFile } from '../../stores';
 
 interface PanelNode {

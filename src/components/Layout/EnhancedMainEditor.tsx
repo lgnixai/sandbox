@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { TabBar, type TabType } from '../Obeditor/Tab';
-import { EnhancedMarkdownEditor } from '../Editor3/EnhancedMarkdownEditor';
+import { TabBar, type TabType } from '../Editor/Tab';
+import { EnhancedMarkdownEditor } from '../Editor/EnhancedMarkdownEditor';
 import { useAppStore } from '@/stores';
 import { cn } from '@/lib/utils';
 
