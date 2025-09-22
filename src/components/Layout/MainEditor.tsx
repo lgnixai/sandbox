@@ -475,14 +475,40 @@ export function MainEditor() {
   const handleAddTab = useCallback((panelId: string) => () => {
     const panel = findPanelById(panelTree, panelId);
     if (!panel?.tabs) return;
-    const newTab = {
-      id: Date.now().toString(),
-      title: '新标签页',
-      isActive: false
+    
+    // 创建新的文件ID和内容
+    const newFileId = Date.now().toString();
+    const newFile: FileItem = {
+      id: newFileId,
+      name: '新笔记',
+      type: 'file',
+      fileType: 'markdown',
+      path: `/新笔记-${newFileId}.md`,
+      content: '# 新笔记\n\n开始编辑这个笔记...'
     };
-    const newTabs = [...panel.tabs, newTab];
+    
+    // 添加到files状态
+    setFiles(prev => ({
+      ...prev,
+      [newFileId]: newFile
+    }));
+    
+    // 创建新标签页，并设置为激活状态
+    const newTab = {
+      id: `tab-${newFileId}`,
+      title: '新笔记',
+      isActive: true,
+      fileId: newFileId
+    } as ExtendedTabType;
+    
+    // 将其他标签页设置为非激活状态，添加新标签页
+    const newTabs = [
+      ...panel.tabs.map(tab => ({ ...tab, isActive: false })),
+      newTab
+    ];
+    
     updatePanelTabs(panelId, newTabs);
-  }, [panelTree, findPanelById, updatePanelTabs]);
+  }, [panelTree, findPanelById, updatePanelTabs, setFiles]);
 
   const handleCloseOthers = useCallback((panelId: string) => (id: string) => {
     const panel = findPanelById(panelTree, panelId);

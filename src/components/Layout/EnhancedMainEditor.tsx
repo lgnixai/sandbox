@@ -75,9 +75,11 @@ export function EnhancedMainEditor() {
       folder: '/workspace/笔记'
     };
     
-    updateNote(newNoteId, newNote);
+    // 使用addNote而不是updateNote来创建新笔记
+    const { addNote } = useAppStore.getState();
+    addNote(newNote);
     openNoteInTab(newNoteId, paneId);
-  }, [updateNote, openNoteInTab]);
+  }, [openNoteInTab]);
 
   // 处理分屏
   const handleSplitHorizontal = useCallback((paneId: string) => (tabId: string) => {
