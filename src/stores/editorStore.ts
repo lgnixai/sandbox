@@ -141,11 +141,8 @@ export const useEditorStore = create<EditorState & EditorActions>()(
     }),
 
     setActiveTab: (tabId, paneId) => set((state) => {
-      console.log('Store setActiveTab called:', { tabId, paneId });
       const pane = state.panes.find(p => p.id === paneId);
       if (pane) {
-        console.log('Found pane:', pane.id, 'current activeTabId:', pane.activeTabId);
-        
         // 将所有标签页设置为非激活状态
         pane.tabs.forEach(tab => {
           tab.isActive = false;
@@ -155,14 +152,10 @@ export const useEditorStore = create<EditorState & EditorActions>()(
         const targetTab = pane.tabs.find(tab => tab.id === tabId);
         if (targetTab) {
           targetTab.isActive = true;
-          console.log('Activated tab:', targetTab.noteId);
         }
         
         pane.activeTabId = tabId;
         state.activePaneId = paneId;
-        console.log('Updated activeTabId to:', tabId);
-      } else {
-        console.log('Pane not found:', paneId);
       }
     }),
 

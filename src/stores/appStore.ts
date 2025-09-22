@@ -344,16 +344,12 @@ console.log('Hello World');
     }),
 
     setActiveTab: (paneId, tabId) => set((state) => {
-      console.log('AppStore setActiveTab called:', { paneId, tabId });
       const pane = state.panes.find(p => p.id === paneId);
       if (pane) {
-        console.log('Found pane in appStore:', pane.id, 'setting activeTabId to:', tabId);
         pane.tabs.forEach(tab => {
           tab.isActive = tab.id === tabId;
         });
-        pane.activeTabId = tabId; // 确保也设置activeTabId
-      } else {
-        console.log('Pane not found in appStore:', paneId);
+        pane.activeTabId = tabId;
       }
     }),
 

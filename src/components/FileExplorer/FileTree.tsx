@@ -449,8 +449,8 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
             "text-[13px] transition-all duration-150",
             "h-[28px] rounded-md", // 参考图片风格：更高的行高和圆角
             isSelected 
-              ? "bg-background-selected text-file-selected" 
-              : "text-file-default hover:bg-background-hover hover:text-file-hover",
+              ? "bg-background-selected text-file-selected shadow-sm ring-1 ring-blue-200 scale-[1.02] transform-gpu" 
+              : "text-file-default hover:bg-background-hover hover:text-file-hover hover:scale-[1.01] transform-gpu transition-transform",
             isDragOver && "bg-blue-500/20 ring-1 ring-blue-500/50",
             draggedItem?.id === item.id && "opacity-50"
           )}
