@@ -99,7 +99,7 @@ npm run build
 src/
 ├── components/           # 组件目录
 │   ├── Layout/          # 布局组件
-│   ├── Editor/          # 编辑器组件
+│   ├── Editor3/         # 编辑器组件
 │   ├── FileExplorer/    # 文件浏览器
 │   ├── Tabs/            # 标签页系统
 │   ├── Search/          # 搜索功能

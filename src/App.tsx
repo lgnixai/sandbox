@@ -1,4 +1,4 @@
-import { TestLayout } from './components/Layout/TestLayout'
+import { Layout } from './components/Layout/Layout'
 import { CommandPalette } from './components/CommandPalette/CommandPalette'
 import { ContextMenuProvider } from './components/ContextMenu/ContextMenuProvider'
 
@@ -7,7 +7,7 @@ function App() {
     
     <ContextMenuProvider>
       <div className="w-full h-full bg-background text-foreground overflow-hidden">
-        <TestLayout />
+        <Layout />
         <CommandPalette />
       </div>
     </ContextMenuProvider>
