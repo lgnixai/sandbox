@@ -518,7 +518,7 @@ const ObsidianLayout: React.FC = () => {
       //   );
       // }
       
-      // Editor panels - show TabBar + Editor/MarkdownEditor
+      // Editor panels - show TabBar + Editor3/MarkdownEditor
       if (node.tabs) {
         const activeTab = node.tabs.find(tab => tab.isActive) as ExtendedTabType | undefined;
         const activeFile = activeTab?.fileId ? files[activeTab.fileId] || selectedFile : null;

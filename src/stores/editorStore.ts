@@ -5,9 +5,9 @@ export interface Tab {
   id: string;
   noteId: string;
   title: string;
-  isActive: boolean;
-  isPinned: boolean;
-  isDirty: boolean;
+  isActive?: boolean;
+  isPinned?: boolean;
+  isDirty?: boolean;
 }
 
 export interface Pane {
@@ -90,22 +90,32 @@ export const useEditorStore = create<EditorState & EditorActions>()(
       // 检查是否已经打开了这个笔记
       const existingTab = targetPane.tabs.find(tab => tab.noteId === noteId);
       if (existingTab) {
+        // 激活已存在的标签页
         targetPane.activeTabId = existingTab.id;
+        // 确保设置活跃面板
+        state.activePaneId = targetPaneId;
         return;
       }
 
       // 创建新标签页
       const newTabId = `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // 这里需要从 notes store 获取笔记信息
-      // 暂时使用 noteId 作为 title，实际使用时会通过组合 store 来获取
+      // 将其他标签页设置为非激活状态
+      targetPane.tabs.forEach(tab => {
+        tab.isActive = false;
+      });
+      
+      // 创建新标签页
       targetPane.tabs.push({
         id: newTabId,
         noteId: noteId,
-        title: noteId, // 这里会在组合 store 中正确设置
+        title: noteId, // 这个会在EnhancedMainEditor中通过notes获取正确标题
+        isActive: true,
+        isPinned: false,
         isDirty: false
       });
       targetPane.activeTabId = newTabId;
+      state.activePaneId = targetPaneId;
     }),
 
     addTab: (paneId, tab) => set((state) => {
@@ -133,7 +143,19 @@ export const useEditorStore = create<EditorState & EditorActions>()(
     setActiveTab: (tabId, paneId) => set((state) => {
       const pane = state.panes.find(p => p.id === paneId);
       if (pane) {
+        // 将所有标签页设置为非激活状态
+        pane.tabs.forEach(tab => {
+          tab.isActive = false;
+        });
+        
+        // 激活指定的标签页
+        const targetTab = pane.tabs.find(tab => tab.id === tabId);
+        if (targetTab) {
+          targetTab.isActive = true;
+        }
+        
         pane.activeTabId = tabId;
+        state.activePaneId = paneId;
       }
     }),
 

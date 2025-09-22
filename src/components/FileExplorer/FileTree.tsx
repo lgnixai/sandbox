@@ -9,8 +9,6 @@ import {
   Image,
   Code,
   Globe,
-  FolderPlus,
-  FilePlus,
   MoreHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -64,12 +62,12 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   
   // 防抖定时器引用
-  const refreshTimeoutRef = useRef<number | null>(null);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // 用于避免循环依赖的 expandedFolders 引用
   const expandedFoldersRef = useRef<Set<string>>(new Set());
 
-  // 从 store 中获取需要的函数
-  const { selectNode, openNoteInTabWithTitle } = useAppStore();
+  // 从 store 中获取需要的函数和状态
+  const { selectNode, openNoteInTabWithTitle, selectedNodeId: globalSelectedNodeId } = useAppStore();
 
   // 同步 expandedFolders 状态到 ref
   useEffect(() => {
@@ -362,6 +360,9 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
   // 处理文件/文件夹点击
   const handleNodeClick = useCallback(async (file: FileItem) => {
     if (file.type === 'file') {
+      // 首先设置文件树选中状态，这会触发双向同步
+      selectNode(file.id);
+      
       if (onFileSelect) {
         onFileSelect(file);
       }
@@ -388,9 +389,6 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
         const { addNote } = useAppStore.getState();
         addNote(tempNote);
         openNoteInTabWithTitle(file.path);
-        
-        // 同步选中状态到文件树
-        selectNode(file.id);
       } catch (error) {
         console.error('Failed to load file:', error);
       }
@@ -438,7 +436,8 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
 
   function Tree({ item }: { item: FileItem }) {
     const isEditing = editingId === item.id;
-    const isSelected = selectedFileId === item.id;
+    // 优先使用全局选中状态，如果没有则使用props传递的状态
+    const isSelected = (globalSelectedNodeId === item.id) || (selectedFileId === item.id);
     const isDragOver = dragOverId === item.id;
     const typeLabel = getFileTypeLabel(item.fileType);
 
@@ -450,8 +449,8 @@ export function FileTree({ className, onFileSelect, selectedFileId, onTreeChange
             "text-[13px] transition-all duration-150",
             "h-[28px] rounded-md", // 参考图片风格：更高的行高和圆角
             isSelected 
-              ? "bg-background-selected text-file-selected" 
-              : "text-file-default hover:bg-background-hover hover:text-file-hover",
+              ? "bg-background-selected text-file-selected shadow-sm ring-1 ring-blue-200 scale-[1.02] transform-gpu" 
+              : "text-file-default hover:bg-background-hover hover:text-file-hover hover:scale-[1.01] transform-gpu transition-transform",
             isDragOver && "bg-blue-500/20 ring-1 ring-blue-500/50",
             draggedItem?.id === item.id && "opacity-50"
           )}

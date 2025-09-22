@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { TabBar, type TabType } from '../Obeditor/Tab';
-import Editor from '../Obeditor/Editor';
-import MarkdownEditor from '../Obeditor/MarkdownEditor';
-import DatabaseEditor from '../Obeditor/DatabaseEditor';
-import CanvasEditor from '../Obeditor/CanvasEditor';
-import HtmlEditor from '../Obeditor/HtmlEditor';
-import CodeEditor from '../Obeditor/CodeEditor';
-import CommandPalette from '../Obeditor/CommandPalette';
+import { TabBar, type TabType } from '../Editor/Tab';
+import Editor from '../Editor/Editor';
+import MarkdownEditor from '../Editor/MarkdownEditor';
+import DatabaseEditor from '../Editor/DatabaseEditor';
+import CanvasEditor from '../Editor/CanvasEditor';
+import HtmlEditor from '../Editor/HtmlEditor';
+import CodeEditor from '../Editor/CodeEditor';
+import CommandPalette from '../Editor/CommandPalette';
 import { useAppStore, type EditorFile } from '../../stores';
 
 interface PanelNode {
@@ -35,7 +35,15 @@ interface FileItem {
 }
 
 export function MainEditor() {
-  const { setEditorCallbacks, revealInExplorer, setLeftPanel } = useAppStore();
+  const { 
+    setEditorCallbacks, 
+    revealInExplorer, 
+    setLeftPanel,
+    // 添加双向同步需要的状态和方法
+    selectedNodeId,
+    selectNode,
+    notes
+  } = useAppStore();
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [files, setFiles] = useState<Record<string, FileItem>>({});
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -91,6 +99,49 @@ export function MainEditor() {
       console.warn('Failed to save panel tree:', error);
     }
   }, [panelTree]);
+
+  // 双向同步：监听文件树选中状态变化，同步到标签页
+  useEffect(() => {
+    if (selectedNodeId && notes[selectedNodeId]) {
+      // 在当前活跃标签页中打开笔记
+      const note = notes[selectedNodeId];
+      const fileItem: FileItem = {
+        id: selectedNodeId,
+        name: note.title,
+        type: 'file',
+        fileType: note.fileType,
+        path: selectedNodeId,
+        content: note.content
+      };
+      
+      // 使用 preview 模式打开，这样不会创建太多标签页
+      handleFileSelectWithMode(fileItem, 'preview');
+    }
+  }, [selectedNodeId, notes, handleFileSelectWithMode]);
+
+  // 双向同步：监听标签页激活状态变化，同步到文件树
+  useEffect(() => {
+    const getCurrentActiveTab = () => {
+      const findActiveTab = (node: PanelNode): ExtendedTabType | null => {
+        if (node.type === 'leaf') {
+          return node.tabs?.find(tab => tab.isActive) as ExtendedTabType || null;
+        } else if (node.children) {
+          for (const child of node.children) {
+            const activeTab = findActiveTab(child);
+            if (activeTab) return activeTab;
+          }
+        }
+        return null;
+      };
+      return findActiveTab(panelTree);
+    };
+
+    const activeTab = getCurrentActiveTab();
+    if (activeTab?.fileId && activeTab.fileId !== selectedNodeId) {
+      // 同步选中状态到文件树，但避免循环更新
+      selectNode(activeTab.fileId);
+    }
+  }, [panelTree, selectedNodeId, selectNode]);
 
   // Add file to recent list
   const addToRecentFiles = useCallback((fileId: string) => {
@@ -161,6 +212,12 @@ export function MainEditor() {
   const handleFileSelectWithMode = useCallback((file: FileItem, openMode: 'preview' | 'pinned') => {
     setSelectedFile(file);
     addToRecentFiles(file.id);
+    
+    // 更新files状态，确保文件内容可以被渲染
+    setFiles(prev => ({
+      ...prev,
+      [file.id]: file
+    }));
 
     const active = getCurrentActiveTab();
     const targetPanelId = active?.panelId || 'root';
@@ -418,14 +475,40 @@ export function MainEditor() {
   const handleAddTab = useCallback((panelId: string) => () => {
     const panel = findPanelById(panelTree, panelId);
     if (!panel?.tabs) return;
-    const newTab = {
-      id: Date.now().toString(),
-      title: '新标签页',
-      isActive: false
+    
+    // 创建新的文件ID和内容
+    const newFileId = Date.now().toString();
+    const newFile: FileItem = {
+      id: newFileId,
+      name: '新笔记',
+      type: 'file',
+      fileType: 'markdown',
+      path: `/新笔记-${newFileId}.md`,
+      content: '# 新笔记\n\n开始编辑这个笔记...'
     };
-    const newTabs = [...panel.tabs, newTab];
+    
+    // 添加到files状态
+    setFiles(prev => ({
+      ...prev,
+      [newFileId]: newFile
+    }));
+    
+    // 创建新标签页，并设置为激活状态
+    const newTab = {
+      id: `tab-${newFileId}`,
+      title: '新笔记',
+      isActive: true,
+      fileId: newFileId
+    } as ExtendedTabType;
+    
+    // 将其他标签页设置为非激活状态，添加新标签页
+    const newTabs = [
+      ...panel.tabs.map(tab => ({ ...tab, isActive: false })),
+      newTab
+    ];
+    
     updatePanelTabs(panelId, newTabs);
-  }, [panelTree, findPanelById, updatePanelTabs]);
+  }, [panelTree, findPanelById, updatePanelTabs, setFiles]);
 
   const handleCloseOthers = useCallback((panelId: string) => (id: string) => {
     const panel = findPanelById(panelTree, panelId);
@@ -615,7 +698,7 @@ export function MainEditor() {
     if (node.type === 'leaf') {
       if (node.tabs) {
         const activeTab = node.tabs.find(tab => tab.isActive) as ExtendedTabType | undefined;
-        const activeFile = activeTab?.fileId ? files[activeTab.fileId] || selectedFile : null;
+        const activeFile = activeTab?.fileId ? files[activeTab.fileId] || selectedFile : selectedFile;
         
         return (
           <div className="h-full flex flex-col">

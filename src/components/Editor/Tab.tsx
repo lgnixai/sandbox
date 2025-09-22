@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, ChevronDown, MoreHorizontal, ArrowLeft, ArrowRight } from 'lucide-react';
+import { X, MoreHorizontal, ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@/components/ui/context-menu';
 
 export interface TabType {
   id: string;
@@ -93,20 +93,22 @@ const Tab: React.FC<TabProps> = ({
   };
 
   return (
-    <div
-      className={cn(
-        "group relative flex items-center min-w-0 max-w-[200px] h-8",
-        "border-r border-tab-border",
-        tab.isActive 
-          ? "bg-tab-active" 
-          : "bg-tab-inactive hover:bg-tab-hover"
-      )}
-    >
-      {/* Tab content */}
-      <div 
-        className="flex-1 flex items-center px-3 cursor-pointer min-w-0"
-        onClick={() => onActivate(tab.id)}
-      >
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          className={cn(
+            "group relative flex items-center min-w-0 max-w-[200px] h-8",
+            "border-r border-tab-border",
+            tab.isActive 
+              ? "bg-tab-active" 
+              : "bg-tab-inactive hover:bg-tab-hover"
+          )}
+        >
+          {/* Tab content */}
+          <div 
+            className="flex-1 flex items-center px-3 cursor-pointer min-w-0"
+            onClick={() => onActivate(tab.id)}
+          >
         {tab.isLocked && (
           <svg className="w-3 h-3 mr-1.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 0h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -134,94 +136,8 @@ const Tab: React.FC<TabProps> = ({
         )}
       </div>
 
-      {/* Tab dropdown */}
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <button 
-            className={cn(
-              "flex items-center justify-center w-5 h-5 mr-1",
-              "opacity-0 group-hover:opacity-100 hover:bg-nav-hover rounded",
-              "transition-opacity duration-150"
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ChevronDown className="w-3 h-3 text-muted-foreground" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          align="start" 
-          className="w-48 bg-card border border-border shadow-dropdown z-50"
-        >
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('close')}
-            disabled={tab.isLocked}
-          >
-            关闭
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('closeOthers')}
-          >
-            关闭其他标签页
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('closeAll')}
-          >
-            全部关闭
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('duplicate')}
-          >
-            复制标签页
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('rename')}
-          >
-            重命名
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('toggleLock')}
-          >
-            {tab.isLocked ? '解锁' : '锁定'}
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('copyPath')}
-            disabled={!tab.filePath}
-          >
-            复制文件路径
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('revealInExplorer')}
-          >
-            在资源管理器中显示
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('splitHorizontal')}
-          >
-            左右分屏
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="text-sm hover:bg-secondary cursor-pointer"
-            onClick={() => handleDropdownClick('splitVertical')}
-          >
-            上下分屏
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
       {/* Close button */}
-      <button
+      <button 
         className={cn(
           "flex items-center justify-center w-5 h-5 mr-1",
           "opacity-0 group-hover:opacity-100 hover:bg-nav-hover rounded",
@@ -229,12 +145,82 @@ const Tab: React.FC<TabProps> = ({
         )}
         onClick={(e) => {
           e.stopPropagation();
-          onClose(tab.id);
+          if (!tab.isLocked) onClose(tab.id);
         }}
       >
-        <X className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+        <X className="w-3 h-3 text-muted-foreground" />
       </button>
     </div>
+  </ContextMenuTrigger>
+      
+      <ContextMenuContent className="w-48 bg-card border border-border shadow-dropdown z-50">
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('close')}
+          disabled={tab.isLocked}
+        >
+          关闭
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('closeOthers')}
+        >
+          关闭其他标签页
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('closeAll')}
+        >
+          全部关闭
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('duplicate')}
+        >
+          复制标签页
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('rename')}
+        >
+          重命名
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('toggleLock')}
+        >
+          {tab.isLocked ? '解锁' : '锁定'}
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('copyPath')}
+          disabled={!tab.filePath}
+        >
+          复制文件路径
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('revealInExplorer')}
+        >
+          在资源管理器中显示
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('splitHorizontal')}
+        >
+          左右分屏
+        </ContextMenuItem>
+        <ContextMenuItem 
+          className="text-sm hover:bg-secondary cursor-pointer"
+          onClick={() => handleDropdownClick('splitVertical')}
+        >
+          上下分屏
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };
 
@@ -281,8 +267,8 @@ const TabBar: React.FC<TabBarProps> = ({
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Tabs with inline add button */}
+      <div className="flex flex-1 overflow-x-auto">
         {tabs.map((tab) => (
           <Tab
             key={tab.id}
@@ -300,39 +286,16 @@ const TabBar: React.FC<TabBarProps> = ({
             onRevealInExplorer={onRevealInExplorer}
           />
         ))}
-         <button 
+        
+        {/* Add tab button - positioned after last tab */}
+        <button 
           onClick={onAddTab}
-          className="p-1 hover:bg-nav-hover rounded"
+          className="flex items-center justify-center w-8 h-8 hover:bg-nav-hover rounded transition-colors flex-shrink-0"
+          title="新建标签页"
         > 
           <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-        </button>
-      </div>
-
-      {/* Add tab button */}
-      <div className="flex items-center px-2 border-l border-border">
-       
-
-        {/* More options */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="p-1 hover:bg-nav-hover rounded ml-1">
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-card border border-border shadow-dropdown">
-            <DropdownMenuItem 
-              className="text-sm hover:bg-secondary cursor-pointer"
-              onClick={onAddTab}
-            >
-              新标签页
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <button className="p-1 hover:bg-nav-hover rounded ml-1">
-          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
     </div>

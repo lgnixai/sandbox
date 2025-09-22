@@ -349,6 +349,7 @@ console.log('Hello World');
         pane.tabs.forEach(tab => {
           tab.isActive = tab.id === tabId;
         });
+        pane.activeTabId = tabId;
       }
     }),
 
