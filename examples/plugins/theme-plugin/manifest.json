@@ -1,0 +1,64 @@
+{
+  "id": "custom-theme",
+  "name": "Custom Theme Plugin",
+  "description": "Adds custom themes and styling options to enhance your workspace appearance",
+  "version": "1.0.0",
+  "author": "ReNote Design Team",
+  "homepage": "https://github.com/renote/theme-plugin",
+  "repository": "https://github.com/renote/theme-plugin",
+  "license": "MIT",
+  "tags": ["theme", "styling", "appearance", "ui"],
+  "main": "index.js",
+  "assets": ["themes.css", "dark-theme.css", "light-theme.css"],
+  "minAppVersion": "1.0.0",
+  "permissions": [
+    "ui:styling",
+    "ui:menu"
+  ],
+  "config": {
+    "currentTheme": "default",
+    "customColors": {
+      "primary": "#3b82f6",
+      "secondary": "#6b7280",
+      "accent": "#10b981",
+      "background": "#ffffff",
+      "text": "#111827"
+    }
+  },
+  "commands": [
+    {
+      "id": "toggle-theme",
+      "name": "Toggle Dark/Light Theme",
+      "callback": "toggleTheme",
+      "hotkey": "Ctrl+Shift+D"
+    },
+    {
+      "id": "customize-theme",
+      "name": "Customize Theme Colors",
+      "callback": "customizeTheme"
+    }
+  ],
+  "menus": [
+    {
+      "id": "theme-menu",
+      "label": "Themes",
+      "icon": "palette",
+      "parent": "view",
+      "children": [
+        {
+          "id": "toggle-theme-menu",
+          "label": "Toggle Dark/Light",
+          "action": "toggle-theme"
+        },
+        {
+          "id": "customize-theme-menu",
+          "label": "Customize Colors",
+          "action": "customize-theme"
+        }
+      ]
+    }
+  ],
+  "hooks": {
+    "onLoad": "applyStoredTheme"
+  }
+}
