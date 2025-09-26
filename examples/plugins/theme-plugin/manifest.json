@@ -12,8 +12,10 @@
   "assets": ["themes.css", "dark-theme.css", "light-theme.css"],
   "minAppVersion": "1.0.0",
   "permissions": [
-    "ui:styling",
-    "ui:menu"
+    "workspace:read",
+    "workspace:write",
+    "ui:menu",
+    "ui:panel"
   ],
   "config": {
     "currentTheme": "default",
@@ -27,15 +29,16 @@
   },
   "commands": [
     {
+      "id": "open-theme-panel",
+      "name": "Open Theme Panel",
+      "callback": "openThemePanel",
+      "hotkey": "Ctrl+Shift+T"
+    },
+    {
       "id": "toggle-theme",
       "name": "Toggle Dark/Light Theme",
       "callback": "toggleTheme",
       "hotkey": "Ctrl+Shift+D"
-    },
-    {
-      "id": "customize-theme",
-      "name": "Customize Theme Colors",
-      "callback": "customizeTheme"
     }
   ],
   "menus": [
@@ -43,19 +46,17 @@
       "id": "theme-menu",
       "label": "Themes",
       "icon": "palette",
-      "parent": "view",
-      "children": [
-        {
-          "id": "toggle-theme-menu",
-          "label": "Toggle Dark/Light",
-          "action": "toggle-theme"
-        },
-        {
-          "id": "customize-theme-menu",
-          "label": "Customize Colors",
-          "action": "customize-theme"
-        }
-      ]
+      "parent": "tools",
+      "action": "open-theme-panel"
+    }
+  ],
+  "panels": [
+    {
+      "id": "theme-panel",
+      "title": "Theme Settings",
+      "icon": "palette",
+      "position": "right",
+      "content": "theme-component"
     }
   ],
   "hooks": {

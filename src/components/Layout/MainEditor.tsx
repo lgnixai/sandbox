@@ -837,7 +837,7 @@ export function MainEditor() {
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
         files={files}
-        onFileSelect={(file) => handleFileSelectWithMode(file, 'preview')}
+        //onFileSelect={(file) => handleFileSelectWithMode(file, 'preview')}
         onCreateFile={handleCreateFileFromPalette}
         onCloseTab={handleCloseCurrentTab}
         recentFiles={recentFiles}

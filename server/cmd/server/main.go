@@ -21,16 +21,17 @@ import (
 func main() {
 	root := os.Getenv("OBSIDIAN_FS_ROOT")
 	if root == "" {
-		root = filepath.Join("./workspace", "data")
+		root = filepath.Join("/data/workspace")
 	}
 	fmt.Println("root", root)
 
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		log.Fatalf("failed to ensure data root: %v", err)
 	}
+	docPath := filepath.Join(root, "data")
 
 	// Init services
-	fsService, err := filesystem.NewService(root)
+	fsService, err := filesystem.NewService(docPath)
 	if err != nil {
 		log.Fatalf("failed to init filesystem service: %v", err)
 	}
@@ -82,7 +83,7 @@ func main() {
 
 	// API routes
 	api.RegisterRoutes(r.Group("/api"), fsService, hub, indexer, root)
-	
+
 	// Plugin API routes
 	if pluginService != nil {
 		plugins.RegisterPluginRoutes(r.Group("/api"), pluginService)

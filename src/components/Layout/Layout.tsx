@@ -4,6 +4,7 @@ import { TopBar } from './TopBar';
 import { ActivityBar } from './ActivityBar';
 import { LeftSidebar } from './LeftSidebar';
 import { EnhancedMainEditor } from './EnhancedMainEditor';
+//import { EnhancedMainEditor } from './MainEditor.tsx';
 import { RightSidebar } from './RightSidebar';
 import { Resizable, ResizableHandle, ResizablePanel } from '../ui/resizable';
 import type { ImperativePanelHandle } from 'react-resizable-panels';

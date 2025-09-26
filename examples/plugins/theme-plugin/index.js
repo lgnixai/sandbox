@@ -53,7 +53,7 @@ class CustomThemePlugin {
         }
       }
     };
-    this.currentTheme = 'default';
+    this.currentTheme = 'light';
   }
 
   async onLoad(context) {
@@ -68,8 +68,8 @@ class CustomThemePlugin {
     // Apply stored theme
     this.applyStoredTheme();
     
-    // Add theme selector to UI if needed
-    this.addThemeControls();
+    // Register theme panel
+    this.addThemePanel();
   }
 
   async onUnload(context) {
@@ -80,6 +80,15 @@ class CustomThemePlugin {
   }
 
   // Command handlers
+  openThemePanel() {
+    this.logger.info('Opening theme panel');
+    return {
+      success: true,
+      message: 'Theme panel opened',
+      action: 'show-panel'
+    };
+  }
+
   toggleTheme() {
     const currentTheme = this.getConfig('currentTheme', 'light');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -87,15 +96,12 @@ class CustomThemePlugin {
     this.applyTheme(newTheme);
     this.setConfig('currentTheme', newTheme);
     
-    this.context.ui.showNotification(`Switched to ${newTheme} theme`, 'success');
     this.logger.info(`Theme toggled to: ${newTheme}`);
-  }
-
-  customizeTheme() {
-    this.logger.info('Opening theme customization');
-    
-    // Show theme customization modal
-    this.context.ui.showModal(this.createThemeCustomizationComponent());
+    return {
+      success: true,
+      message: `Switched to ${newTheme} theme`,
+      theme: newTheme
+    };
   }
 
   // Hook handlers
@@ -151,201 +157,187 @@ class CustomThemePlugin {
       .replace(/theme-\w+/g, '');
   }
 
-  // Theme customization UI
-  createThemeCustomizationComponent() {
-    return ({ onClose }) => {
+  addThemePanel() {
+    // Register theme panel with the UI system
+    this.context.ui.addPanel({
+      id: 'theme-panel',
+      title: 'Theme Settings',
+      icon: 'palette',
+      position: 'right',
+      component: this.createThemePanelComponent()
+    });
+  }
+
+  createThemePanelComponent() {
+    return () => {
       const [selectedTheme, setSelectedTheme] = React.useState(this.currentTheme);
       const [customColors, setCustomColors] = React.useState(
         this.getConfig('customColors', this.themes.light.colors)
       );
-      const [previewMode, setPreviewMode] = React.useState(false);
 
-      const applyPreview = (theme) => {
-        if (theme && this.themes[theme]) {
-          this.applyTheme(theme);
-        } else {
-          this.applyThemeColors(customColors);
-        }
-      };
-
-      const saveTheme = () => {
-        this.setConfig('currentTheme', selectedTheme);
-        this.setConfig('customColors', customColors);
-        this.applyTheme(selectedTheme);
-        
-        this.context.ui.showNotification('Theme saved successfully', 'success');
-        onClose();
-      };
-
-      const resetToDefaults = () => {
-        setCustomColors(this.themes.light.colors);
-        setSelectedTheme('light');
+      const applyTheme = (themeName) => {
+        setSelectedTheme(themeName);
+        this.applyTheme(themeName);
+        this.setConfig('currentTheme', themeName);
       };
 
       const updateCustomColor = (colorKey, value) => {
         const newColors = { ...customColors, [colorKey]: value };
         setCustomColors(newColors);
-        
-        if (previewMode) {
-          this.applyThemeColors(newColors);
-        }
+        this.setConfig('customColors', newColors);
+        this.applyThemeColors(newColors);
+      };
+
+      const resetToDefaults = () => {
+        setCustomColors(this.themes.light.colors);
+        setSelectedTheme('light');
+        this.applyTheme('light');
+        this.setConfig('currentTheme', 'light');
+        this.setConfig('customColors', this.themes.light.colors);
       };
 
       return React.createElement('div', {
-        className: 'p-6 max-w-2xl',
+        className: 'h-full flex flex-col bg-background',
       }, [
-        React.createElement('h2', {
-          key: 'title',
-          className: 'text-xl font-semibold mb-4',
-        }, 'Customize Theme'),
-
-        // Theme selector
         React.createElement('div', {
-          key: 'theme-selector',
-          className: 'mb-6',
+          key: 'header',
+          className: 'p-4 border-b border-border',
         }, [
-          React.createElement('h3', {
-            key: 'selector-title',
-            className: 'text-sm font-medium mb-2',
-          }, 'Choose Theme'),
-          React.createElement('div', {
-            key: 'theme-options',
-            className: 'grid grid-cols-3 gap-3',
-          }, Object.entries(this.themes).map(([key, theme]) =>
-            React.createElement('button', {
-              key: key,
-              onClick: () => {
-                setSelectedTheme(key);
-                if (previewMode) applyPreview(key);
-              },
-              className: `p-3 border rounded-lg text-center transition-colors ${
-                selectedTheme === key 
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`,
-            }, [
-              React.createElement('div', {
-                key: 'preview',
-                className: 'w-full h-8 rounded mb-2 flex overflow-hidden',
-              }, [
-                React.createElement('div', {
-                  key: 'color1',
-                  className: 'flex-1',
-                  style: { backgroundColor: theme.colors.primary },
-                }),
-                React.createElement('div', {
-                  key: 'color2', 
-                  className: 'flex-1',
-                  style: { backgroundColor: theme.colors.accent },
-                }),
-                React.createElement('div', {
-                  key: 'color3',
-                  className: 'flex-1',
-                  style: { backgroundColor: theme.colors.background },
-                })
-              ]),
-              React.createElement('div', {
-                key: 'name',
-                className: 'text-xs font-medium',
-              }, theme.name)
-            ])
-          ))
-        ]),
-
-        // Custom colors section
-        React.createElement('div', {
-          key: 'custom-colors',
-          className: 'mb-6',
-        }, [
-          React.createElement('h3', {
-            key: 'colors-title',
-            className: 'text-sm font-medium mb-3',
-          }, 'Custom Colors'),
-          React.createElement('div', {
-            key: 'color-inputs',
-            className: 'grid grid-cols-2 gap-4',
-          }, Object.entries(customColors).map(([key, value]) =>
-            React.createElement('div', {
-              key: key,
-              className: 'flex items-center space-x-2',
-            }, [
-              React.createElement('label', {
-                key: 'label',
-                className: 'text-xs font-medium w-20 capitalize',
-              }, key.replace(/([A-Z])/g, ' $1')),
-              React.createElement('input', {
-                key: 'color-input',
-                type: 'color',
-                value: value,
-                onChange: (e) => updateCustomColor(key, e.target.value),
-                className: 'w-8 h-8 rounded border',
-              }),
-              React.createElement('input', {
-                key: 'text-input',
-                type: 'text',
-                value: value,
-                onChange: (e) => updateCustomColor(key, e.target.value),
-                className: 'flex-1 px-2 py-1 text-xs border rounded font-mono',
-              })
-            ])
-          ))
-        ]),
-
-        // Preview toggle
-        React.createElement('div', {
-          key: 'preview-toggle',
-          className: 'mb-6',
-        }, [
-          React.createElement('label', {
-            key: 'preview-label',
-            className: 'flex items-center space-x-2',
+          React.createElement('h2', {
+            key: 'title',
+            className: 'text-lg font-semibold flex items-center gap-2',
           }, [
-            React.createElement('input', {
-              key: 'preview-checkbox',
-              type: 'checkbox',
-              checked: previewMode,
-              onChange: (e) => setPreviewMode(e.target.checked),
-            }),
-            React.createElement('span', {
-              key: 'preview-text',
-              className: 'text-sm',
-            }, 'Live Preview')
+            React.createElement('span', { key: 'icon' }, '🎨'),
+            'Theme Settings'
           ])
         ]),
 
-        // Actions
         React.createElement('div', {
-          key: 'actions',
-          className: 'flex justify-between',
+          key: 'content',
+          className: 'flex-1 p-4 overflow-y-auto',
         }, [
-          React.createElement('button', {
-            key: 'reset',
-            onClick: resetToDefaults,
-            className: 'px-4 py-2 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-800',
-          }, 'Reset to Defaults'),
+          // Theme selector
           React.createElement('div', {
-            key: 'primary-actions',
-            className: 'space-x-2',
+            key: 'theme-selector',
+            className: 'mb-6',
+          }, [
+            React.createElement('h3', {
+              key: 'selector-title',
+              className: 'text-sm font-medium mb-3',
+            }, 'Choose Theme'),
+            React.createElement('div', {
+              key: 'theme-options',
+              className: 'space-y-2',
+            }, Object.entries(this.themes).map(([key, theme]) =>
+              React.createElement('button', {
+                key: key,
+                onClick: () => applyTheme(key),
+                className: `w-full p-3 border rounded-lg text-left transition-colors ${
+                  selectedTheme === key 
+                    ? 'border-primary bg-primary/10 text-primary' 
+                    : 'border-border hover:border-primary/50'
+                }`,
+              }, [
+                React.createElement('div', {
+                  key: 'preview',
+                  className: 'w-full h-6 rounded mb-2 flex overflow-hidden',
+                }, [
+                  React.createElement('div', {
+                    key: 'color1',
+                    className: 'flex-1',
+                    style: { backgroundColor: theme.colors.primary },
+                  }),
+                  React.createElement('div', {
+                    key: 'color2', 
+                    className: 'flex-1',
+                    style: { backgroundColor: theme.colors.accent },
+                  }),
+                  React.createElement('div', {
+                    key: 'color3',
+                    className: 'flex-1',
+                    style: { backgroundColor: theme.colors.background },
+                  })
+                ]),
+                React.createElement('div', {
+                  key: 'name',
+                  className: 'text-sm font-medium',
+                }, theme.name)
+              ])
+            ))
+          ]),
+
+          // Quick toggle
+          React.createElement('div', {
+            key: 'quick-toggle',
+            className: 'mb-6',
+          }, [
+            React.createElement('h3', {
+              key: 'toggle-title',
+              className: 'text-sm font-medium mb-3',
+            }, 'Quick Toggle'),
+            React.createElement('button', {
+              key: 'toggle-btn',
+              onClick: () => {
+                const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+                applyTheme(newTheme);
+              },
+              className: 'w-full p-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors',
+            }, `Switch to ${this.currentTheme === 'dark' ? 'Light' : 'Dark'} Theme`)
+          ]),
+
+          // Custom colors section
+          React.createElement('div', {
+            key: 'custom-colors',
+            className: 'mb-6',
+          }, [
+            React.createElement('h3', {
+              key: 'colors-title',
+              className: 'text-sm font-medium mb-3',
+            }, 'Custom Colors'),
+            React.createElement('div', {
+              key: 'color-inputs',
+              className: 'space-y-3',
+            }, Object.entries(customColors).map(([key, value]) =>
+              React.createElement('div', {
+                key: key,
+                className: 'flex items-center space-x-3',
+              }, [
+                React.createElement('label', {
+                  key: 'label',
+                  className: 'text-xs font-medium w-20 capitalize',
+                }, key.replace(/([A-Z])/g, ' $1')),
+                React.createElement('input', {
+                  key: 'color-input',
+                  type: 'color',
+                  value: value,
+                  onChange: (e) => updateCustomColor(key, e.target.value),
+                  className: 'w-8 h-8 rounded border border-border',
+                }),
+                React.createElement('input', {
+                  key: 'text-input',
+                  type: 'text',
+                  value: value,
+                  onChange: (e) => updateCustomColor(key, e.target.value),
+                  className: 'flex-1 px-2 py-1 text-xs border border-border rounded font-mono bg-background',
+                })
+              ])
+            ))
+          ]),
+
+          // Reset button
+          React.createElement('div', {
+            key: 'reset-section',
+            className: 'mt-auto',
           }, [
             React.createElement('button', {
-              key: 'cancel',
-              onClick: onClose,
-              className: 'px-4 py-2 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-800',
-            }, 'Cancel'),
-            React.createElement('button', {
-              key: 'save',
-              onClick: saveTheme,
-              className: 'px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600',
-            }, 'Save Theme')
+              key: 'reset-btn',
+              onClick: resetToDefaults,
+              className: 'w-full p-3 text-sm border border-border rounded-lg hover:bg-muted transition-colors',
+            }, 'Reset to Defaults')
           ])
         ])
       ]);
     };
-  }
-
-  addThemeControls() {
-    // Add theme switcher to UI if needed
-    // This could add a small theme toggle button somewhere in the interface
   }
 
   // Utility methods
