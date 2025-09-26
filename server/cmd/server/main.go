@@ -13,6 +13,7 @@ import (
 
 	"obsidianfs/internal/api"
 	"obsidianfs/internal/filesystem"
+	"obsidianfs/internal/plugins"
 	"obsidianfs/internal/tags"
 	"obsidianfs/internal/ws"
 )
@@ -43,6 +44,19 @@ func main() {
 	hub := ws.NewHub()
 	go hub.Run()
 
+	// Initialize plugin system
+	pluginsDir := filepath.Join(root, ".plugins")
+	pluginDbPath := filepath.Join(root, ".plugins.db")
+	pluginService, err := plugins.NewService(pluginDbPath, pluginsDir)
+	if err != nil {
+		log.Printf("plugin system disabled: %v", err)
+	}
+	defer func() {
+		if pluginService != nil {
+			pluginService.Close()
+		}
+	}()
+
 	// Start watcher for external changes
 	watcher, err := filesystem.NewWatcher(root, hub, indexer)
 	if err != nil {
@@ -68,6 +82,11 @@ func main() {
 
 	// API routes
 	api.RegisterRoutes(r.Group("/api"), fsService, hub, indexer, root)
+	
+	// Plugin API routes
+	if pluginService != nil {
+		plugins.RegisterPluginRoutes(r.Group("/api"), pluginService)
+	}
 
 	// WebSocket endpoint
 	r.GET("/ws", func(c *gin.Context) {
